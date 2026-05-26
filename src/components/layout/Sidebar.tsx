@@ -39,7 +39,7 @@ export function Sidebar() {
             href={href}
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
-              (href === "/" ? pathname === href : pathname.startsWith(href))
+              (href === "/" ? pathname === href : pathname === href || pathname.startsWith(href + "/"))
                 ? "bg-primary/[0.12] text-primary font-medium"
                 : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
             )}
