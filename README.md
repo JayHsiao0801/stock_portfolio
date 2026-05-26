@@ -4,6 +4,16 @@
 
 ---
 
+## 截圖
+
+![各組合重點](docs/screenshots/概略.png)
+
+![股票配置](docs/screenshots/股票.png)
+
+![總資產配置](docs/screenshots/總資產.png)
+
+---
+
 ## 功能總覽
 
 - **多套投資組合**管理，各組合資料獨立，可隨時切換
