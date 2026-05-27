@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/layout/ThemeProvider";
 import {
   createChart,
   CandlestickSeries,

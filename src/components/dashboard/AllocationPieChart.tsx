@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/layout/ThemeProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Holding } from "@/generated/prisma/client";
 

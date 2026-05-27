@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const searchResult = await yf.search(q);
-    const filtered = (searchResult.quotes ?? [])
+    type Quote = { symbol: string; isYahooFinance?: boolean; quoteType?: string; [key: string]: unknown };
+    const filtered = ((searchResult.quotes ?? []) as Quote[])
       .filter((r) => r.isYahooFinance && ["EQUITY", "ETF", "MUTUALFUND"].includes(r.quoteType ?? ""))
       .slice(0, 8);
 

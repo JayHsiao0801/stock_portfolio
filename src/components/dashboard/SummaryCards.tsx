@@ -16,7 +16,8 @@ export function SummaryCards({ totalValue, totalCost, totalPnL, totalPnLPct }: S
   const isProfit = totalPnL >= 0;
   const PnLIcon = isProfit ? TrendingUp : TrendingDown;
 
-  const cards = [
+  type CardItem = { label: string; value: string; icon: React.ElementType; iconClass: string; iconBg: string; valueClass?: string; sub?: string };
+  const cards: CardItem[] = [
     {
       label: "總市值",
       value: formatCurrency(totalValue),

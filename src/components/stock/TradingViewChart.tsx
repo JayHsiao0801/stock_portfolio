@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/layout/ThemeProvider";
 
 interface Props {
   ticker: string;
