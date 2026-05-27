@@ -26,7 +26,7 @@
 - **個股查詢**：搜尋任意股票，查看 K 線圖（1m～5y）、開高低量、本益比、EPS
 - **新增持股自動搜尋**：輸入代號自動帶出中文名稱與幣別
 - **深色 / 淺色 / 系統模式**切換
-- **AI 聊天助理**：支援 Claude（Anthropic）與 Gemini（Google），依設定自動切換
+- **AI 聊天助理**：支援 Claude（Anthropic）、Gemini（Google）與 Groq（免費），依設定自動切換
 - **AI 金鑰管理**：直接在設定頁輸入或移除 API Key，一鍵重啟生效
 - **股價**由 Yahoo Finance 自動取得，每 5 分鐘更新，免費無需 API Key
 
@@ -50,7 +50,14 @@ cd stock_portfolio
 chmod +x start.command
 ```
 
-**Windows** — 在檔案總管雙擊 `start.bat`
+**Windows** — 開啟命令提示字元（cmd），切換到專案目錄後執行：
+
+```cmd
+start.bat
+```
+
+> **注意**：請勿直接雙擊 `start.bat`，應從 cmd 執行以便看到錯誤訊息。
+> 若尚未安裝 Node.js，請先前往 [nodejs.org](https://nodejs.org/) 下載安裝（建議選 LTS 版本），安裝完後重新開啟 cmd 再執行。
 
 腳本會自動完成：複製設定檔、安裝依賴、初始化資料庫，然後啟動伺服器。
 
@@ -62,15 +69,16 @@ chmod +x start.command
 
 ## API Key 說明
 
-| Key | 用途 | 是否必填 |
-|-----|------|---------|
-| `ANTHROPIC_API_KEY` | Claude AI 聊天 | 選填 |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini AI 聊天 | 選填 |
-| 股價 API | yahoo-finance2 自動取得 | **不需要** |
+| Key | 用途 | 是否必填 | 申請 |
+|-----|------|---------|------|
+| `GROQ_API_KEY` | Groq AI 聊天（**免費**） | 選填 | [console.groq.com](https://console.groq.com) |
+| `ANTHROPIC_API_KEY` | Claude AI 聊天 | 選填 | [console.anthropic.com](https://console.anthropic.com) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini AI 聊天 | 選填 | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| 股價 API | yahoo-finance2 自動取得 | **不需要** | — |
 
-- 兩個 Key 都不填：App 正常運作，AI 聊天功能顯示未設定提示
+- Key 都不填：App 正常運作，AI 聊天功能顯示未設定提示
 - 只填一個：自動使用有設定的那個
-- 兩個都填：UI 可自由切換 Claude / Gemini
+- 填多個：UI 可自由切換 Claude / Gemini / Groq
 - **可直接在設定頁（側邊欄 → 設定）輸入或移除 Key，無需手動編輯 `.env`**
 
 ---

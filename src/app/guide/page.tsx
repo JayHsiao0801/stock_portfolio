@@ -107,13 +107,14 @@ export default function GuidePage() {
 
           <Section icon={MessageSquare} title="AI 助理">
             <Item label="開啟方式" desc="點擊左側側邊欄底部的「AI 助理」按鈕，聊天面板會從右側滑入。" />
-            <Item label="支援模型" desc="目前支援 Anthropic Claude 與 Google Gemini，需在設定頁輸入對應的 API Key。" />
+            <Item label="支援模型" desc="支援 Groq（免費）、Anthropic Claude、Google Gemini，需在設定頁輸入對應的 API Key，有多個 Key 時右上角可切換。" />
+            <Item label="Groq（推薦）" desc="完全免費，於 console.groq.com 申請 API Key，填入設定頁的「Groq（免費）」欄位即可使用，模型為 Llama 3.3 70B。" />
             <Item label="用途建議" desc="可詢問股票分析、投資策略建議，或請 AI 解讀目前組合的配置狀況。" />
           </Section>
 
           <Section icon={Settings} title="設定">
             <Item label="外觀" desc="支援淺色、深色、跟隨系統三種模式，可在設定頁切換。" />
-            <Item label="AI 金鑰" desc="直接在設定頁輸入或移除 ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY，儲存後點「立即重啟」即可生效，無需手動編輯 .env 檔案。" />
+            <Item label="AI 金鑰" desc="在設定頁輸入或移除 API Key，儲存後立即生效，無需重啟伺服器，也不需手動編輯 .env 檔案。" />
             <Item label="手續費率" desc="在「總資產配置 → 退休規劃設定」中調整，預設 0.1425%。依券商折扣輸入實際費率即可。" />
             <Item label="股價來源" desc="使用 Yahoo Finance 免費 API，不需要 Key。App 每 5 分鐘向 Yahoo Finance 重新抓取一次；Yahoo Finance 免費方案本身的報價相對交易所可能有最多 15 分鐘延遲。" />
           </Section>
