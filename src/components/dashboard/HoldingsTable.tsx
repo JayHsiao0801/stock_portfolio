@@ -130,6 +130,9 @@ function SortableRow({
       <TableCell className="text-right tabular-nums py-3 text-muted-foreground">
         {h.avgCost.toFixed(2)}
       </TableCell>
+      <TableCell className="text-right tabular-nums py-3 text-muted-foreground">
+        {formatCurrency(Number(h.shares) * Number(h.avgCost))}
+      </TableCell>
       <TableCell className="text-right tabular-nums py-3">
         {priceLoading ? (
           <Skeleton className="h-3 w-14 ml-auto rounded" />
@@ -221,7 +224,8 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
                 <TableHead className="w-6 h-9 pl-2" />
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 pl-2">股票</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">股數</TableHead>
-                <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">成本</TableHead>
+                <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">均價</TableHead>
+                <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">投入成本</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">現價</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">預估收入(台幣)</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">損益</TableHead>
@@ -232,7 +236,7 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
             <TableBody>
               {orderedHoldings.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground text-sm py-12">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground text-sm py-12">
                     尚無持股，點擊「新增持股」開始
                   </TableCell>
                 </TableRow>
