@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Send, Bot, User, AlertCircle } from "lucide-react";
+import { Send, Bot, User, AlertCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,7 +16,7 @@ interface AiChatPanelProps {
 }
 
 export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPanelProps) {
-  const { aiProvider, setAiProvider } = useAppStore();
+  const { aiProvider, setAiProvider, chatMessages, setChatMessages, clearChatMessages } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const hasAny = availableProviders.claude || availableProviders.gemini;
@@ -34,6 +34,8 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useStreamingChat({
     api: "/api/chat",
     body: { provider: effectiveProvider, portfolioContext },
+    initialMessages: chatMessages,
+    onMessagesChange: setChatMessages,
   });
 
   useEffect(() => {
@@ -53,6 +55,16 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
           <span className="text-sm font-medium tracking-tight">AI 助理</span>
         </div>
 
+        <div className="flex items-center gap-1">
+        {messages.length > 0 && (
+          <button
+            onClick={clearChatMessages}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+            title="清除對話"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
         {showToggle && (
           <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
             {(["claude", "gemini"] as const).map((p) => (
@@ -76,6 +88,7 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
             {effectiveProvider}
           </span>
         )}
+        </div>
       </div>
 
       {/* Messages */}
