@@ -96,13 +96,22 @@ export async function updateRetirementSettings(data: {
 }
 
 export async function getRetirementSettings() {
-  const s = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
-  return {
-    exchangeRate: s?.exchangeRate ?? 32.0,
-    monthlyExpense: s?.monthlyExpense ?? 0,
-    dividendTaxRate: s?.dividendTaxRate ?? 10.0,
-    brokerageFeeRate: s?.brokerageFeeRate ?? 0.1425,
-  };
+  try {
+    const s = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+    return {
+      exchangeRate: s?.exchangeRate ?? 32.0,
+      monthlyExpense: s?.monthlyExpense ?? 0,
+      dividendTaxRate: s?.dividendTaxRate ?? 10.0,
+      brokerageFeeRate: s?.brokerageFeeRate ?? 0.1425,
+    };
+  } catch {
+    return {
+      exchangeRate: 32.0,
+      monthlyExpense: 0,
+      dividendTaxRate: 10.0,
+      brokerageFeeRate: 0.1425,
+    };
+  }
 }
 
 export async function createPortfolio(data: {
@@ -125,27 +134,31 @@ export async function updatePortfolio(
 }
 
 export async function deletePortfolio(id: string) {
-  const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
-  if (settings?.activePortfolioId === id) {
-    const next = await prisma.portfolio.findFirst({
-      where: { id: { not: id } },
-      orderBy: { isDefault: "desc" },
-    });
-    await prisma.appSettings.update({
-      where: { id: "singleton" },
-      data: { activePortfolioId: next?.id ?? null },
-    });
-  }
+  try {
+    const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+    if (settings?.activePortfolioId === id) {
+      const next = await prisma.portfolio.findFirst({
+        where: { id: { not: id } },
+        orderBy: { isDefault: "desc" },
+      });
+      await prisma.appSettings.update({
+        where: { id: "singleton" },
+        data: { activePortfolioId: next?.id ?? null },
+      });
+    }
+  } catch { /* appSettings table may not exist yet, skip */ }
   await prisma.portfolio.delete({ where: { id } });
   revalidatePath("/");
 }
 
 export async function setActivePortfolio(id: string) {
-  await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    update: { activePortfolioId: id },
-    create: { id: "singleton", activePortfolioId: id },
-  });
+  try {
+    await prisma.appSettings.upsert({
+      where: { id: "singleton" },
+      update: { activePortfolioId: id },
+      create: { id: "singleton", activePortfolioId: id },
+    });
+  } catch { /* appSettings table may not exist yet, skip */ }
   revalidatePath("/");
 }
 
