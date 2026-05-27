@@ -14,13 +14,19 @@ import type { Holding, Portfolio } from "@/generated/prisma/client";
 
 type PortfolioWithHoldings = Portfolio & { holdings: Holding[] };
 
+interface RetirementSettings {
+  monthlyExpense: number;
+  dividendTaxRate: number;
+}
+
 interface Props {
   portfolios: PortfolioWithHoldings[];
+  retirementSettings: RetirementSettings;
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export function PortfoliosClient({ portfolios }: Props) {
+export function PortfoliosClient({ portfolios, retirementSettings }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const setActivePortfolioId = useAppStore((s) => s.setActivePortfolioId);
@@ -82,8 +88,12 @@ export function PortfoliosClient({ portfolios }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {portfolioData.map((p) => {
-          const alloc = grandTotal > 0 ? (p.totalValue / grandTotal) * 100 : 0;
           const plannedCash = Number((p as Portfolio & { plannedCash: number }).plannedCash ?? 0);
+          const afterTaxDividend = p.totalDividend * (1 - retirementSettings.dividendTaxRate / 100);
+          const monthlyAfterTax = afterTaxDividend / 12;
+          const fireRatio = retirementSettings.monthlyExpense > 0
+            ? (monthlyAfterTax / retirementSettings.monthlyExpense) * 100
+            : null;
 
           return (
             <Card key={p.id} className="border-border/60 cursor-pointer hover:border-primary/60 hover:bg-accent/40 transition-all duration-150 active:scale-[0.99]" onClick={() => handleSelect(p.id)}>
@@ -120,17 +130,28 @@ export function PortfoliosClient({ portfolios }: Props) {
                   </div>
                 </div>
 
-                {/* 占比進度條 */}
+                {/* FIRE 進度條 */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] text-muted-foreground">占總資產比例</span>
-                    <span className="text-[11px] tabular-nums font-medium">{alloc.toFixed(1)}%</span>
+                    <span className="text-[10px] text-muted-foreground">FIRE 進度</span>
+                    {fireRatio !== null ? (
+                      <span className={cn("text-[11px] tabular-nums font-medium", fireRatio >= 100 ? "text-profit" : "text-primary")}>
+                        {fireRatio.toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">未設定生活費目標</span>
+                    )}
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden bg-muted">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${alloc}%`, background: p.color }}
-                    />
+                    {fireRatio !== null && (
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.min(fireRatio, 100)}%`,
+                          background: fireRatio >= 100 ? "oklch(0.73 0.19 145)" : "oklch(0.62 0.21 260)",
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
 
