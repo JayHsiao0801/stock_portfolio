@@ -2,6 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { pushDbSchema } from "@/instrumentation";
+
+async function withDbInit<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("does not exist in the current database") || msg.includes("no such table")) {
+      await pushDbSchema();
+      return await fn();
+    }
+    throw e;
+  }
+}
 
 export async function getPortfolios() {
   try {
@@ -36,48 +50,50 @@ export async function copyPortfolio(
   sourceId: string,
   data: { name: string; description?: string; currency?: string }
 ) {
-  const source = await prisma.portfolio.findUnique({
-    where: { id: sourceId },
-    include: { holdings: true },
-  });
-  if (!source) throw new Error("Source portfolio not found");
-
-  const newPortfolio = await prisma.portfolio.create({ data });
-
-  if (source.holdings.length > 0) {
-    await prisma.holding.createMany({
-      data: source.holdings.map((h) => ({
-        portfolioId: newPortfolio.id,
-        ticker: h.ticker,
-        name: h.name,
-        shares: h.shares,
-        avgCost: h.avgCost,
-        currency: h.currency,
-        sector: h.sector ?? undefined,
-        notes: h.notes ?? undefined,
-      })),
+  return withDbInit(async () => {
+    const source = await prisma.portfolio.findUnique({
+      where: { id: sourceId },
+      include: { holdings: true },
     });
-  }
+    if (!source) throw new Error("Source portfolio not found");
 
-  revalidatePath("/portfolio");
-  revalidatePath("/");
-  return newPortfolio;
+    const newPortfolio = await prisma.portfolio.create({ data });
+
+    if (source.holdings.length > 0) {
+      await prisma.holding.createMany({
+        data: source.holdings.map((h) => ({
+          portfolioId: newPortfolio.id,
+          ticker: h.ticker,
+          name: h.name,
+          shares: h.shares,
+          avgCost: h.avgCost,
+          currency: h.currency,
+          sector: h.sector ?? undefined,
+          notes: h.notes ?? undefined,
+        })),
+      });
+    }
+
+    revalidatePath("/portfolio");
+    revalidatePath("/");
+    return newPortfolio;
+  });
 }
 
 export async function updatePortfolioPlannedCash(id: string, plannedCash: number) {
-  await prisma.portfolio.update({ where: { id }, data: { plannedCash } });
+  await withDbInit(() => prisma.portfolio.update({ where: { id }, data: { plannedCash } }));
   revalidatePath("/allocation");
 }
 
 export async function updateHoldingDividendYield(holdingId: string, dividendYield: number) {
-  await prisma.holding.update({ where: { id: holdingId }, data: { dividendYield } });
+  await withDbInit(() => prisma.holding.update({ where: { id: holdingId }, data: { dividendYield } }));
 }
 
 export async function updatePortfolioLoan(
   id: string,
   data: { remainingLoan: number; loanInterestRate: number; loanMonths: number }
 ) {
-  await prisma.portfolio.update({ where: { id }, data });
+  await withDbInit(() => prisma.portfolio.update({ where: { id }, data }));
   revalidatePath("/allocation");
 }
 
@@ -87,11 +103,13 @@ export async function updateRetirementSettings(data: {
   dividendTaxRate?: number;
   brokerageFeeRate?: number;
 }) {
-  await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    update: data,
-    create: { id: "singleton", ...data },
-  });
+  await withDbInit(() =>
+    prisma.appSettings.upsert({
+      where: { id: "singleton" },
+      update: data,
+      create: { id: "singleton", ...data },
+    })
+  );
   revalidatePath("/allocation");
 }
 
@@ -119,7 +137,7 @@ export async function createPortfolio(data: {
   description?: string;
   currency?: string;
 }) {
-  const portfolio = await prisma.portfolio.create({ data });
+  const portfolio = await withDbInit(() => prisma.portfolio.create({ data }));
   revalidatePath("/");
   return portfolio;
 }
@@ -128,7 +146,7 @@ export async function updatePortfolio(
   id: string,
   data: { name?: string; description?: string; currency?: string }
 ) {
-  const portfolio = await prisma.portfolio.update({ where: { id }, data });
+  const portfolio = await withDbInit(() => prisma.portfolio.update({ where: { id }, data }));
   revalidatePath("/");
   return portfolio;
 }
@@ -147,7 +165,7 @@ export async function deletePortfolio(id: string) {
       });
     }
   } catch { /* appSettings table may not exist yet, skip */ }
-  await prisma.portfolio.delete({ where: { id } });
+  await withDbInit(() => prisma.portfolio.delete({ where: { id } }));
   revalidatePath("/");
 }
 
