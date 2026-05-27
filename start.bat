@@ -24,10 +24,12 @@ if errorlevel 1 (
 )
 
 echo [4/4] Checking port 3000...
-for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000 " ^| findstr "LISTENING"') do (
-  echo Killing old server (PID %%a)...
+netstat -ano 2>nul | findstr ":3000 " | findstr "LISTENING" > "%TEMP%\port3000.tmp" 2>nul
+for /f "tokens=5" %%a in (%TEMP%\port3000.tmp) do (
+  echo Killing old server on port 3000...
   taskkill /PID %%a /F >nul 2>&1
 )
+del "%TEMP%\port3000.tmp" >nul 2>&1
 
 echo.
 echo Starting Stock Portfolio Manager...
