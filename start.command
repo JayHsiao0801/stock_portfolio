@@ -19,7 +19,21 @@ npx prisma generate
 
 # 初始化 / 更新資料庫 schema
 echo "初始化資料庫..."
-npx prisma migrate deploy
+MIGRATE_OUTPUT=$(npx prisma migrate deploy 2>&1)
+MIGRATE_EXIT=$?
+if [ $MIGRATE_EXIT -ne 0 ]; then
+  if echo "$MIGRATE_OUTPUT" | grep -q "P3005"; then
+    # 資料庫已有資料但無 migration 歷史，標記所有 migration 為已套用
+    echo "偵測到既有資料庫，進行基準化..."
+    for dir in prisma/migrations/*/; do
+      name=$(basename "$dir")
+      npx prisma migrate resolve --applied "$name" > /dev/null 2>&1 || true
+    done
+    npx prisma migrate deploy
+  else
+    echo "$MIGRATE_OUTPUT"
+  fi
+fi
 
 # 如果 port 3000 已被佔用，先結束所有舊程序
 OLD_PIDS=$(lsof -ti tcp:3000 2>/dev/null)
