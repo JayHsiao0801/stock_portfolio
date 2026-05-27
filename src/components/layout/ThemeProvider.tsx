@@ -40,6 +40,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(saved);
     setResolvedTheme(resolved);
     applyTheme(resolved);
+    document.cookie = `theme=${saved};path=/;max-age=31536000`;
   }, []);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem("theme", newTheme);
+    document.cookie = `theme=${newTheme};path=/;max-age=31536000`;
     const resolved: ResolvedTheme = newTheme === "system" ? getSystemTheme() : newTheme;
     setResolvedTheme(resolved);
     applyTheme(resolved);

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
@@ -8,17 +8,16 @@ export const metadata: Metadata = {
   description: "個人股票資產管理",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value ?? "dark";
+  const isDark = theme === "dark" || theme === "system";
+
   return (
-    <html lang="zh-TW" className="h-full antialiased">
+    <html lang="zh-TW" className={`h-full antialiased${isDark ? " dark" : ""}`}>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme')||'dark';if(t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark')}catch(e){}` }}
-        />
         <ThemeProvider>
           {children}
         </ThemeProvider>
