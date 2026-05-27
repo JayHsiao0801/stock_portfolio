@@ -13,14 +13,14 @@ export async function getPortfolios() {
 export async function getPortfolioWithHoldings(id: string) {
   return prisma.portfolio.findUnique({
     where: { id },
-    include: { holdings: { orderBy: { createdAt: "asc" } } },
+    include: { holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
   });
 }
 
 export async function getAllPortfoliosWithHoldings() {
   return prisma.portfolio.findMany({
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-    include: { holdings: { orderBy: { createdAt: "asc" } } },
+    include: { holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
   });
 }
 
@@ -77,6 +77,7 @@ export async function updateRetirementSettings(data: {
   exchangeRate?: number;
   monthlyExpense?: number;
   dividendTaxRate?: number;
+  brokerageFeeRate?: number;
 }) {
   await prisma.appSettings.upsert({
     where: { id: "singleton" },
@@ -92,6 +93,7 @@ export async function getRetirementSettings() {
     exchangeRate: s?.exchangeRate ?? 32.0,
     monthlyExpense: s?.monthlyExpense ?? 0,
     dividendTaxRate: s?.dividendTaxRate ?? 10.0,
+    brokerageFeeRate: s?.brokerageFeeRate ?? 0.1425,
   };
 }
 

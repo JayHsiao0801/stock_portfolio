@@ -5,7 +5,6 @@ import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Holding } from "@/generated/prisma/client";
 
-/* Apple system colors */
 export const COLORS = [
   "#0A84FF",
   "#30D158",
@@ -16,6 +15,9 @@ export const COLORS = [
   "#FF2D55",
   "#FFD60A",
 ];
+
+const TW_COLORS = ["#0A84FF","#5AC8FA","#BF5AF2","#FF2D55","#FFD60A","#30D158","#FF9F0A","#FF453A"];
+const US_COLORS = ["#FF9F0A","#30D158","#FF453A","#BF5AF2","#5AC8FA","#0A84FF","#FFD60A","#FF2D55"];
 
 const fmt = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -54,15 +56,125 @@ function CustomTooltip({
         border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(0,0,0,0.10)",
         borderRadius: "12px",
         padding: "10px 14px",
-        boxShadow: isDark
-          ? "0 8px 32px rgba(0,0,0,0.5)"
-          : "0 4px 16px rgba(0,0,0,0.12)",
+        boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 16px rgba(0,0,0,0.12)",
       }}
     >
       <div style={{ fontSize: 12, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)", marginBottom: 3 }}>
         {d.name}
       </div>
       <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)" }}>{fmt.format(d.value)}</div>
+    </div>
+  );
+}
+
+function MiniDonut({
+  data,
+  colors,
+  total,
+  label,
+  isDark,
+  shadow,
+  strokeColor,
+  textPrimary,
+  textMuted,
+  textSecondary,
+  dividerColor,
+}: {
+  data: DataPoint[];
+  colors: string[];
+  total: number;
+  label: string;
+  isDark: boolean;
+  shadow: string;
+  strokeColor: string;
+  textPrimary: string;
+  textMuted: string;
+  textSecondary: string;
+  dividerColor: string;
+}) {
+  const categoryTotal = data.reduce((s, d) => s + d.value, 0);
+
+  if (data.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs py-8">
+        無{label}持股
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 min-w-0 flex items-center gap-5">
+      {/* 圓環 */}
+      <div className="relative shrink-0" style={{ height: 148, width: 148 }}>
+        <div className="absolute inset-0" style={{ filter: shadow }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <defs>
+                {colors.map((color, i) => (
+                  <linearGradient key={i} id={`pie-${label}-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={1} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0.78} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={43}
+                outerRadius={66}
+                paddingAngle={0}
+                cornerRadius={5}
+                dataKey="value"
+                stroke={strokeColor}
+                strokeWidth={isDark ? 3 : 1.5}
+                startAngle={90}
+                endAngle={-270}
+                animationBegin={0}
+                animationDuration={700}
+              >
+                {data.map((_, i) => (
+                  <Cell key={i} fill={`url(#pie-${label}-grad-${i % colors.length})`} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip isDark={isDark} />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+          <span className="tabular-nums font-bold leading-none" style={{ fontSize: 18, color: textPrimary }}>
+            {data.length}
+          </span>
+          <span style={{ fontSize: 9, color: textMuted, marginTop: 2 }}>
+            檔{label}
+          </span>
+        </div>
+      </div>
+
+      {/* 圖例 */}
+      <div className="flex-1 min-w-0 space-y-2">
+        {data.map((d, i) => {
+          const pct = total > 0 ? (d.value / total) * 100 : 0;
+          const color = colors[i % colors.length];
+          return (
+            <div key={d.ticker} className="flex items-center gap-2 min-w-0">
+              <div className="h-2 w-2 rounded-sm shrink-0" style={{ background: color }} />
+              <span className="truncate flex-1 text-xs" style={{ color: textSecondary }}>
+                {d.name}
+              </span>
+              <span className="text-xs font-semibold tabular-nums shrink-0 w-11 text-right" style={{ color: textPrimary }}>
+                {pct.toFixed(1)}%
+              </span>
+            </div>
+          );
+        })}
+        <div className="pt-2 mt-0.5 flex items-center justify-between" style={{ borderTop: `1px solid ${dividerColor}` }}>
+          <span style={{ fontSize: 10, color: textMuted }}>{label}小計</span>
+          <span className="text-xs font-bold tabular-nums" style={{ color: textPrimary }}>
+            {fmt.format(categoryTotal)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -80,7 +192,7 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
     ? "drop-shadow(0 12px 28px rgba(0,0,0,0.70)) drop-shadow(0 3px 8px rgba(0,0,0,0.45))"
     : "drop-shadow(0 6px 16px rgba(0,0,0,0.14)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))";
 
-  const data: DataPoint[] = holdings
+  const allData: DataPoint[] = holdings
     .map((h) => ({
       name: h.name,
       ticker: h.ticker,
@@ -89,9 +201,14 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value);
 
-  const total = data.reduce((s, d) => s + d.value, 0);
+  // 同時更新 colorMap 用的 COLORS（依全部排序決定顏色，保持跟 holdings table 一致）
+  const twData = allData.filter((d) => d.ticker.endsWith(".TW") || d.ticker.endsWith(".TWO"));
+  const usData = allData.filter((d) => !d.ticker.endsWith(".TW") && !d.ticker.endsWith(".TWO"));
+  const total = allData.reduce((s, d) => s + d.value, 0);
 
-  if (data.length === 0) {
+  const sharedProps = { total, isDark, shadow, strokeColor, textPrimary, textMuted, textSecondary, dividerColor };
+
+  if (allData.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -107,85 +224,20 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3 border-b border-border/50">
-        <CardTitle className="text-sm font-medium tracking-tight">資產配置</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium tracking-tight">資產配置</CardTitle>
+          <span className="text-xs tabular-nums font-semibold" style={{ color: textPrimary }}>
+            總計 {fmt.format(total)}
+          </span>
+        </div>
       </CardHeader>
       <CardContent className="pt-5">
-        <div className="flex items-center gap-8">
-
-          {/* 圓環圖 */}
-          <div className="relative h-[168px] w-[168px] shrink-0">
-            <div className="absolute inset-0" style={{ filter: shadow }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <defs>
-                    {COLORS.map((color, i) => (
-                      <linearGradient key={i} id={`seg-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={color} stopOpacity={1} />
-                        <stop offset="100%" stopColor={color} stopOpacity={0.78} />
-                      </linearGradient>
-                    ))}
-                  </defs>
-                  <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={76}
-                    paddingAngle={0}
-                    cornerRadius={6}
-                    dataKey="value"
-                    stroke={strokeColor}
-                    strokeWidth={isDark ? 3 : 1.5}
-                    startAngle={90}
-                    endAngle={-270}
-                    animationBegin={0}
-                    animationDuration={700}
-                  >
-                    {data.map((_, i) => (
-                      <Cell key={i} fill={`url(#seg-grad-${i % COLORS.length})`} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip isDark={isDark} />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* 中心 */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-              <span className="tabular-nums font-bold leading-none" style={{ fontSize: 22, color: textPrimary }}>
-                {data.length}
-              </span>
-              <span style={{ fontSize: 10, color: textMuted, marginTop: 2 }}>
-                檔持股
-              </span>
-            </div>
-          </div>
-
-          {/* 圖例 */}
-          <div className="flex-1 min-w-0 space-y-2.5">
-            {data.map((d, i) => {
-              const pct = total > 0 ? (d.value / total) * 100 : 0;
-              const color = COLORS[i % COLORS.length];
-              return (
-                <div key={d.ticker} className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: color }} />
-                  <span className="truncate flex-1 text-xs" style={{ color: textSecondary }}>
-                    {d.name}
-                  </span>
-                  <span className="text-xs font-semibold tabular-nums shrink-0 w-12 text-right" style={{ color: textPrimary }}>
-                    {pct.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            })}
-
-            <div className="pt-2.5 mt-1 flex items-center justify-between" style={{ borderTop: `1px solid ${dividerColor}` }}>
-              <span style={{ fontSize: 11, color: textMuted }}>總市值</span>
-              <span className="text-xs font-bold tabular-nums" style={{ color: textPrimary }}>
-                {fmt.format(total)}
-              </span>
-            </div>
-          </div>
+        <div className="flex gap-6 flex-wrap">
+          <MiniDonut data={twData} colors={TW_COLORS} label="台股" {...sharedProps} />
+          {twData.length > 0 && usData.length > 0 && (
+            <div className="w-px self-stretch" style={{ background: dividerColor }} />
+          )}
+          <MiniDonut data={usData} colors={US_COLORS} label="美股" {...sharedProps} />
         </div>
       </CardContent>
     </Card>

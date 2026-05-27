@@ -15,9 +15,10 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 interface Props {
   portfolio: (Portfolio & { holdings: Holding[] }) | null;
   availableProviders: { claude: boolean; gemini: boolean };
+  brokerageFeeRate: number;
 }
 
-export function DashboardClient({ portfolio, availableProviders }: Props) {
+export function DashboardClient({ portfolio, availableProviders, brokerageFeeRate }: Props) {
   const { setPortfolioContext } = useAppStore();
 
   const tickers = portfolio?.holdings.map((h) => h.ticker) ?? [];
@@ -94,6 +95,7 @@ export function DashboardClient({ portfolio, availableProviders }: Props) {
         priceMap={priceMap}
         priceLoading={priceLoading}
         colorMap={colorMap}
+        brokerageFeeRate={brokerageFeeRate}
       />
     </div>
   );

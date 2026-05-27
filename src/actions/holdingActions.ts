@@ -40,6 +40,15 @@ export async function deleteHolding(id: string) {
   revalidatePath("/");
 }
 
+export async function updateHoldingOrder(orderedIds: string[]) {
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      prisma.holding.update({ where: { id }, data: { sortOrder: index } })
+    )
+  );
+  revalidatePath("/");
+}
+
 export async function getAllDividends() {
   return prisma.transaction.findMany({
     where: { type: "DIVIDEND" },

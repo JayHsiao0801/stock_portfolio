@@ -55,3 +55,6 @@ next-env.d.ts
 
 # Claude Code 本機設定
 .claude/
+
+# 伺服器重啟信號（暫存）
+.restart_signal

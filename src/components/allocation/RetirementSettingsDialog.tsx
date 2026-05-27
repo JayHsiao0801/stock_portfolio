@@ -9,7 +9,7 @@ import { updateRetirementSettings } from "@/actions/portfolioActions";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  settings: { exchangeRate: number; monthlyExpense: number; dividendTaxRate: number };
+  settings: { exchangeRate: number; monthlyExpense: number; dividendTaxRate: number; brokerageFeeRate: number };
 }
 
 export function RetirementSettingsDialog({ open, onOpenChange, settings }: Props) {
@@ -17,6 +17,7 @@ export function RetirementSettingsDialog({ open, onOpenChange, settings }: Props
   const [exchangeRate, setExchangeRate] = useState(settings.exchangeRate.toString());
   const [monthlyExpense, setMonthlyExpense] = useState(settings.monthlyExpense.toString());
   const [dividendTaxRate, setDividendTaxRate] = useState(settings.dividendTaxRate.toString());
+  const [brokerageFeeRate, setBrokerageFeeRate] = useState(settings.brokerageFeeRate.toString());
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +26,7 @@ export function RetirementSettingsDialog({ open, onOpenChange, settings }: Props
         exchangeRate: parseFloat(exchangeRate) || 32,
         monthlyExpense: parseFloat(monthlyExpense) || 0,
         dividendTaxRate: parseFloat(dividendTaxRate) || 0,
+        brokerageFeeRate: parseFloat(brokerageFeeRate) || 0.1425,
       });
       onOpenChange(false);
     });
@@ -73,6 +75,20 @@ export function RetirementSettingsDialog({ open, onOpenChange, settings }: Props
               onChange={(e) => setDividendTaxRate(e.target.value)}
               className="h-8 text-sm"
               placeholder="10.0"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">手續費率（%）</label>
+            <p className="text-[10px] text-muted-foreground/60">標準 0.1425%，依券商折扣調整。台股 + 0.3%、台股 ETF + 0.1% 交易稅由系統自動加算</p>
+            <Input
+              type="number"
+              step="0.001"
+              min="0"
+              max="1"
+              value={brokerageFeeRate}
+              onChange={(e) => setBrokerageFeeRate(e.target.value)}
+              className="h-8 text-sm"
+              placeholder="0.1425"
             />
           </div>
           <DialogFooter>

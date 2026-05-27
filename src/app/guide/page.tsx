@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick } from "lucide-react";
+import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick, GripVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
@@ -51,19 +51,22 @@ export default function GuidePage() {
           </Section>
 
           <Section icon={LayoutDashboard} title="股票配置">
-            <Item label="用途" desc="顯示目前選定組合的所有持股，包含各股現價、市值、未實現損益與報酬率。" />
+            <Item label="用途" desc="顯示目前選定組合的所有持股，包含各股現價、預估收入、未實現損益與報酬率。" />
+            <Item label="預估收入" desc="賣出後實際入帳的估算金額，已扣除手續費（預設 0.1425%）與交易稅（台股 0.3%、台股 ETF 0.1%、美股 0%）。" />
+            <Item label="損益 / 報酬率" desc="以「預估收入 − 含買入手續費成本」計算，與券商顯示的損益一致。" />
+            <Item label="排序" desc="滑鼠移到持股列，左側出現拖拉把手（⠿），按住拖曳可調整順序，放開後自動儲存。" />
             <Item label="新增持股" desc="點擊右上角「新增持股」，在股票代號欄輸入後會出現搜尋下拉選單，選取後自動帶入名稱與幣別。也可手動填入代號、股數、平均成本。" />
             <Item label="編輯 / 刪除 / 查詢" desc="滑鼠移到持股列上，右側會出現放大鏡（查詢）、鉛筆（編輯）、垃圾桶（刪除）三個按鈕。" />
-            <Item label="查詢個股" desc="點擊放大鏡圖示直接跳到該股票的 K 線圖與基本資訊頁面。" />
             <Item label="股價更新" desc="頁面載入後自動從 Yahoo Finance 取得即時報價，之後每 5 分鐘自動更新一次。" />
           </Section>
 
           <Section icon={PieChart} title="總資產配置">
-            <Item label="用途" desc="顯示目前組合的資產分布圓餅圖，以及各項財務指標摘要卡片。" />
+            <Item label="用途" desc="顯示目前組合的資產分布圓餅圖（台股 / 美股分開顯示），以及各項財務指標摘要卡片。" />
+            <Item label="資產配置圖" desc="左側顯示台股（.TW / .TWO）持股分布，右側顯示美股持股分布，各自列出個股佔總資產的比例與該類別小計。" />
             <Item label="流動預備金" desc="點擊該卡片可直接編輯預留的現金金額，會計入「總資產」但不會影響持股損益計算。Enter 確認，Esc 取消。" />
             <Item label="年配息卡片" desc="主要數字為稅後配息，下方小字為稅前，稅率在「退休規劃參考 → 設定」中調整。" />
-            <Item label="配息區塊" desc="對每檔持股輸入預期年化殖利率（%），輸入後 0.6 秒自動儲存，也可按 Tab 移到下一欄立即存入。" />
-            <Item label="退休規劃參考" desc="點擊右上角「設定」可設定稅率、匯率與每月生活費目標，系統計算 FIRE 達成率（稅後月配息 ÷ 每月生活費）。" />
+            <Item label="配息區塊" desc="對每檔持股輸入預期年化殖利率（%），輸入後 0.6 秒自動儲存，也可按 Tab 移到下一欄立即存入。配息以市值計算，非預估收入。" />
+            <Item label="退休規劃參考" desc="點擊右上角「設定」可設定稅率、匯率、每月生活費目標與手續費率，系統計算 FIRE 達成率（稅後月配息 ÷ 每月生活費）。" />
             <Item label="貸款" desc="點擊右上角「編輯」可輸入貸款金額、年利率與還款期數（支援月 / 年切換），儲存後顯示在剩餘貸款卡片。" />
           </Section>
 
@@ -94,15 +97,24 @@ export default function GuidePage() {
             <p className="pt-1 text-muted-foreground/70">殖利率為預估值，需手動輸入，系統不會自動爬取股息資料。</p>
           </Section>
 
+          <Section icon={TrendingUp} title="預估收入計算方式">
+            <p>預估收入 = 市值 × (1 − 手續費率% − 交易稅%)</p>
+            <p>交易稅：台股 0.3%、台股 ETF 0.1%、美股 0%</p>
+            <p>損益 = 預估收入 − 含買入手續費成本</p>
+            <p>含買入手續費成本 = 股數 × 平均成本 × (1 + 手續費率%)</p>
+            <p className="pt-1 text-muted-foreground/70">手續費率預設 0.1425%，可在「退休規劃設定」依券商折扣調整。</p>
+          </Section>
+
           <Section icon={MessageSquare} title="AI 助理">
             <Item label="開啟方式" desc="點擊左側側邊欄底部的「AI 助理」按鈕，聊天面板會從右側滑入。" />
-            <Item label="支援模型" desc="目前支援 Anthropic Claude 與 Google Gemini，需在 .env 設定對應的 API Key。" />
+            <Item label="支援模型" desc="目前支援 Anthropic Claude 與 Google Gemini，需在設定頁輸入對應的 API Key。" />
             <Item label="用途建議" desc="可詢問股票分析、投資策略建議，或請 AI 解讀目前組合的配置狀況。" />
           </Section>
 
           <Section icon={Settings} title="設定">
             <Item label="外觀" desc="支援淺色、深色、跟隨系統三種模式，可在設定頁切換。" />
-            <Item label="AI 金鑰" desc="在專案根目錄的 .env 檔設定 ANTHROPIC_API_KEY 或 GOOGLE_GENERATIVE_AI_API_KEY，重新啟動服務後生效。" />
+            <Item label="AI 金鑰" desc="直接在設定頁輸入或移除 ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY，儲存後點「立即重啟」即可生效，無需手動編輯 .env 檔案。" />
+            <Item label="手續費率" desc="在「總資產配置 → 退休規劃設定」中調整，預設 0.1425%。依券商折扣輸入實際費率即可。" />
             <Item label="股價來源" desc="使用 Yahoo Finance 免費 API，不需要 Key。App 每 5 分鐘向 Yahoo Finance 重新抓取一次；Yahoo Finance 免費方案本身的報價相對交易所可能有最多 15 分鐘延遲。" />
           </Section>
 
@@ -110,6 +122,7 @@ export default function GuidePage() {
             <Item label="資料儲存" desc="所有資料存在本機 SQLite（prisma/dev.db），不會上傳雲端，重新部署前請備份此檔案。" />
             <Item label="股價延遲" desc="App 每 5 分鐘重新抓取股價；Yahoo Finance 免費報價本身相對交易所可能有最多 15 分鐘延遲，僅供參考，不適合做即時交易依據。" />
             <Item label="損益計算" desc="目前僅計算未實現損益，不追蹤已實現損益（賣出紀錄）。" />
+            <Item label="預估收入誤差" desc="手續費率若與券商實際折扣不同，預估收入會有些微差距，請在退休規劃設定中調整至實際費率。" />
           </Section>
         </div>
       </div>

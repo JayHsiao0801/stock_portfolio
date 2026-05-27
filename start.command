@@ -14,4 +14,15 @@ echo "準備好後請在瀏覽器開啟 http://localhost:3000"
 echo "按 Ctrl+C 可停止伺服器"
 echo ""
 
-npm run dev
+while true; do
+  npm run dev
+  # 若存在重啟信號檔，刪除後自動重啟；否則正常結束
+  if [ -f ".restart_signal" ]; then
+    rm -f ".restart_signal"
+    echo ""
+    echo "正在重新啟動伺服器..."
+    sleep 1
+  else
+    break
+  fi
+done

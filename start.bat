@@ -13,5 +13,13 @@ echo 準備好後請在瀏覽器開啟 http://localhost:3000
 echo 按 Ctrl+C 可停止伺服器
 echo.
 
+:restart
 npm run dev
+if exist ".restart_signal" (
+  del /f ".restart_signal" >nul 2>&1
+  echo.
+  echo 正在重新啟動伺服器...
+  timeout /t 1 /nobreak >nul
+  goto restart
+)
 pause

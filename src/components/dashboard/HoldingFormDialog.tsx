@@ -47,6 +47,7 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const skipNextSearch = useRef(false);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: standardSchemaResolver(schema),
@@ -76,7 +77,8 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
   }, [open, holding, reset]);
 
   useEffect(() => {
-    if (holding) return; // 編輯模式不搜尋
+    if (holding) return;
+    if (skipNextSearch.current) { skipNextSearch.current = false; return; }
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (!tickerValue || tickerValue.length < 1) {
       setSuggestions([]);
@@ -100,6 +102,7 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
   }, [tickerValue, holding]);
 
   const handleSelect = (result: SearchResult) => {
+    skipNextSearch.current = true;
     setValue("ticker", result.symbol, { shouldValidate: true });
     setValue("name", result.name, { shouldValidate: true });
     setValue("currency", result.currency);

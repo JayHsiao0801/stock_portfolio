@@ -10,14 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { COLORS } from "@/components/dashboard/AllocationPieChart";
-import { calcUnrealizedPnL, formatCurrency, formatPercent } from "@/lib/stock/calculator";
+import { calcUnrealizedPnL, calcNetProceeds, formatCurrency, formatPercent } from "@/lib/stock/calculator";
 import { cn } from "@/lib/utils";
 import { RetirementSettingsDialog } from "./RetirementSettingsDialog";
 import { updatePortfolioPlannedCash, updatePortfolioLoan, updateHoldingDividendYield } from "@/actions/portfolioActions";
 import type { Holding, Portfolio } from "@/generated/prisma/client";
 
 type PortfolioWithHoldings = Portfolio & { holdings: Holding[] };
-type RetirementSettings = { exchangeRate: number; monthlyExpense: number; dividendTaxRate: number };
+type RetirementSettings = { exchangeRate: number; monthlyExpense: number; dividendTaxRate: number; brokerageFeeRate: number };
 
 interface Props {
   portfolio: PortfolioWithHoldings | null;

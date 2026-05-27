@@ -1,4 +1,4 @@
-# Stock Portfolio Manager v1.0.0
+# Stock Portfolio Manager v1.1.0
 
 個人股票資產管理工具，支援多套投資組合、即時損益、配息試算、退休規劃、個股 K 線查詢與 AI 聊天助理。
 
@@ -17,14 +17,17 @@
 ## 功能總覽
 
 - **多套投資組合**管理，各組合資料獨立，可隨時切換
-- **持股明細**：股數、平均成本、即時現價、未實現損益、報酬率
-- **總資產配置**：圓餅圖、流動預備金、貸款管理
+- **持股明細**：股數、平均成本、即時現價、預估收入（扣手續費與交易稅）、損益、報酬率
+- **拖拉排序**：持股列可自由拖拉調整順序，自動儲存
+- **資產配置**：台股 / 美股分開顯示的圓餅圖
+- **總資產配置**：流動預備金、貸款管理
 - **配息試算**：輸入年化殖利率，自動計算稅前/稅後年配息、月配息
 - **退休規劃（FIRE）**：設定每月生活費目標，計算 FIRE 達成率
 - **個股查詢**：搜尋任意股票，查看 K 線圖（1m～5y）、開高低量、本益比、EPS
 - **新增持股自動搜尋**：輸入代號自動帶出中文名稱與幣別
 - **深色 / 淺色 / 系統模式**切換
 - **AI 聊天助理**：支援 Claude（Anthropic）與 Gemini（Google），依設定自動切換
+- **AI 金鑰管理**：直接在設定頁輸入或移除 API Key，一鍵重啟生效
 - **股價**由 Yahoo Finance 自動取得，每 5 分鐘更新，免費無需 API Key
 
 ---
@@ -63,28 +66,27 @@ chmod +x start.command
 
 ```bash
 # 1. Clone 專案
-git clone https://github.com/你的帳號/stock.git
-cd stock
+git clone https://github.com/JayHsiao0801/stock_portfolio.git
+cd stock_portfolio
 
 # 2. 安裝依賴
 npm install
 
-# 3. 複製環境變數範本
+# 3. 複製環境變數範本（資料庫路徑設定）
 # macOS / Linux:
 cp .env.example .env
 # Windows CMD:
 copy .env.example .env
 
-# 4. 編輯 .env，填入 API Key（不填也可正常使用，AI 聊天功能停用）
-# DATABASE_URL 保持預設 "file:./dev.db" 即可
-
-# 5. 初始化資料庫
+# 4. 初始化資料庫
 npx prisma migrate deploy
 
-# 6. 啟動
+# 5. 啟動
 npm run dev
 # 或直接雙擊 start.command（macOS）/ start.bat（Windows）
 ```
+
+> **AI API Key** 不需在此手動編輯，啟動後在 App 側邊欄 →「設定」頁面即可直接輸入或移除。
 
 瀏覽器開啟 http://localhost:3000
 
@@ -101,6 +103,7 @@ npm run dev
 - 兩個 Key 都不填：App 正常運作，AI 聊天功能顯示未設定提示
 - 只填一個：自動使用有設定的那個
 - 兩個都填：UI 可自由切換 Claude / Gemini
+- **可直接在設定頁（側邊欄 → 設定）輸入或移除 Key，無需手動編輯 `.env`**
 
 ---
 
@@ -136,6 +139,7 @@ npm run db:reset     # 重置資料庫
 - [yahoo-finance2](https://github.com/gadicc/node-yahoo-finance2) — 股價與搜尋
 - [Vercel AI SDK](https://sdk.vercel.ai/) — Claude / Gemini 串流
 - [Zustand](https://github.com/pmndrs/zustand) — 狀態管理
+- [@dnd-kit](https://dndkit.com/) — 拖拉排序
 - [next-themes](https://github.com/pacocoursey/next-themes) — 深淺色主題
 
 ---

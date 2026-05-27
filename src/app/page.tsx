@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
-import { getPortfolios, getAppSettings, getPortfolioWithHoldings } from "@/actions/portfolioActions";
+import { getPortfolios, getAppSettings, getPortfolioWithHoldings, getRetirementSettings } from "@/actions/portfolioActions";
 
 export default async function HomePage() {
-  const [portfolios, settings] = await Promise.all([getPortfolios(), getAppSettings()]);
+  const [portfolios, settings, retirementSettings] = await Promise.all([getPortfolios(), getAppSettings(), getRetirementSettings()]);
 
   const activeId = settings?.activePortfolioId ?? portfolios[0]?.id ?? null;
   const portfolio = activeId ? await getPortfolioWithHoldings(activeId) : null;
@@ -17,7 +17,7 @@ export default async function HomePage() {
 
   return (
     <AppShell>
-      <DashboardClient portfolio={portfolio} availableProviders={availableProviders} />
+      <DashboardClient portfolio={portfolio} availableProviders={availableProviders} brokerageFeeRate={retirementSettings.brokerageFeeRate} />
     </AppShell>
   );
 }
