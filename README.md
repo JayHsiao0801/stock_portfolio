@@ -34,61 +34,29 @@
 
 ## 快速啟動
 
-### macOS — 雙擊 `start.command`
+> **前置需求**：[Node.js 20+](https://nodejs.org/) 與 Git（[Windows](https://git-scm.com/download/win) / macOS：`xcode-select --install`）
 
-第一次使用前需給予執行權限（只需一次）：
-
-```bash
-chmod +x start.command
-```
-
-之後直接在 Finder 雙擊 `start.command`，Terminal 會自動開啟並啟動伺服器。
-
-### Windows — 雙擊 `start.bat`
-
-直接在檔案總管雙擊 `start.bat` 即可。
-
-> 啟動後在瀏覽器開啟 **http://localhost:3000**
-
----
-
-## 前置需求
-
-1. **Node.js 20+**（建議 LTS）
-   - 下載：https://nodejs.org/
-2. **Git**（Clone 專案用）
-   - Windows：https://git-scm.com/download/win
-   - macOS：`xcode-select --install`
-
----
-
-## 安裝步驟
+### 步驟
 
 ```bash
 # 1. Clone 專案
 git clone https://github.com/JayHsiao0801/stock_portfolio.git
 cd stock_portfolio
-
-# 2. 複製環境變數範本（資料庫路徑設定）
-# macOS / Linux:
-cp .env.example .env
-# Windows CMD:
-copy .env.example .env
-
-# 3. 安裝依賴（同時自動產生 Prisma Client）
-npm install
-
-# 4. 初始化資料庫
-npx prisma migrate deploy
-
-# 5. 啟動
-npm run dev
-# 或直接雙擊 start.command（macOS）/ start.bat（Windows）
 ```
 
-> **AI API Key** 不需在此手動編輯，啟動後在 App 側邊欄 →「設定」頁面即可直接輸入或移除。
+**macOS** — 先給予執行權限（只需一次），之後直接雙擊即可：
 
-瀏覽器開啟 http://localhost:3000
+```bash
+chmod +x start.command
+```
+
+**Windows** — 在檔案總管雙擊 `start.bat`
+
+腳本會自動完成：複製設定檔、安裝依賴、初始化資料庫，然後啟動伺服器。
+
+> 啟動後在瀏覽器開啟 **http://localhost:3000**
+>
+> AI API Key 可在 App 側邊欄 →「設定」頁面輸入，無需手動編輯任何檔案。
 
 ---
 
