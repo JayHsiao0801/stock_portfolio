@@ -3,22 +3,27 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 if not exist ".env" (
-  echo [1/5] Copying .env.example to .env...
+  echo [1/4] Copying .env.example to .env...
   copy .env.example .env >nul
 )
 
 if not exist "node_modules" (
-  echo [2/5] Installing dependencies...
+  echo [2/4] Installing dependencies...
   npm install
+  if errorlevel 1 (
+    echo ERROR: npm install failed. Please check your Node.js installation.
+    pause
+    exit /b 1
+  )
 )
 
-echo [3/5] Generating Prisma Client...
-npx prisma generate
+echo [3/4] Syncing database schema...
+node node_modules\prisma\build\index.js db push --skip-generate --accept-data-loss
+if errorlevel 1 (
+  echo WARNING: Database schema sync failed, will retry on first request.
+)
 
-echo [4/5] Syncing database schema...
-npx prisma db push --skip-generate
-
-echo [5/5] Checking port 3000...
+echo [4/4] Checking port 3000...
 for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000 " ^| findstr "LISTENING"') do (
   echo Killing old server (PID %%a)...
   taskkill /PID %%a /F >nul 2>&1
