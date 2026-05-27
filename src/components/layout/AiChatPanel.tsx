@@ -84,7 +84,7 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
           <Alert className="border-border/60 bg-white/[0.03]">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs leading-relaxed">
-              尚未設定 AI。請在 <code className="font-mono bg-white/10 px-1 rounded">.env</code> 填入{" "}
+              尚未設定 AI API Key。請至側邊欄「設定」頁面輸入{" "}
               <code className="font-mono bg-white/10 px-1 rounded">ANTHROPIC_API_KEY</code> 或{" "}
               <code className="font-mono bg-white/10 px-1 rounded">GOOGLE_GENERATIVE_AI_API_KEY</code>。
             </AlertDescription>

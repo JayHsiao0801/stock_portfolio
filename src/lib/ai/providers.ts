@@ -4,7 +4,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 export function getClaudeModel() {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
   const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return anthropic("claude-sonnet-4-6");
+  return anthropic("claude-haiku-4-5-20251001");
 }
 
 export function getGeminiModel() {

@@ -68,6 +68,16 @@ export function useStreamingChat(options: {
             )
           );
         }
+
+        if (!accumulated.trim()) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: "❌ AI 未回應，可能是 API 額度不足（429）或網路問題，請稍後再試。" }
+                : m
+            )
+          );
+        }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "發生錯誤";
         setMessages((prev) =>

@@ -69,14 +69,14 @@ chmod +x start.command
 git clone https://github.com/JayHsiao0801/stock_portfolio.git
 cd stock_portfolio
 
-# 2. 安裝依賴
-npm install
-
-# 3. 複製環境變數範本（資料庫路徑設定）
+# 2. 複製環境變數範本（資料庫路徑設定）
 # macOS / Linux:
 cp .env.example .env
 # Windows CMD:
 copy .env.example .env
+
+# 3. 安裝依賴（同時自動產生 Prisma Client）
+npm install
 
 # 4. 初始化資料庫
 npx prisma migrate deploy
