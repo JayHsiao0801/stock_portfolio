@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { pushDbSchema } from "@/instrumentation";
+import { pushDbSchema } from "@/lib/dbInit";
 
 async function withDbInit<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -10,7 +10,12 @@ async function withDbInit<T>(fn: () => Promise<T>): Promise<T> {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("does not exist in the current database") || msg.includes("no such table")) {
-      await pushDbSchema();
+      try {
+        await pushDbSchema();
+      } catch (pushErr) {
+        console.error("[withDbInit] prisma db push failed:", pushErr);
+        throw new Error("資料庫初始化失敗，請重新啟動伺服器後再試。");
+      }
       return await fn();
     }
     throw e;
