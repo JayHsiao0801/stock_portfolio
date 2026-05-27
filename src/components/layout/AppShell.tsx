@@ -1,5 +1,6 @@
 import { Sidebar } from "./Sidebar";
 import { ChatPanelShell } from "./ChatPanelShell";
+import { getEnvValue } from "@/lib/envUtils";
 
 interface Props {
   children: React.ReactNode;
@@ -7,8 +8,9 @@ interface Props {
 
 export async function AppShell({ children }: Props) {
   const availableProviders = {
-    claude: !!process.env.ANTHROPIC_API_KEY,
-    gemini: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    claude: !!getEnvValue("ANTHROPIC_API_KEY"),
+    gemini: !!getEnvValue("GOOGLE_GENERATIVE_AI_API_KEY"),
+    groq: !!getEnvValue("GROQ_API_KEY"),
   };
 
   return (

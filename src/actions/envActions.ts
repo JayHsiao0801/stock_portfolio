@@ -40,6 +40,7 @@ export async function setEnvKey(key: string, value: string): Promise<void> {
     content = content.trimEnd() + "\n" + line + "\n";
   }
   writeEnvFile(content);
+  process.env[key] = value;
 }
 
 /** 清空一個 key（保留行但值設為空） */
@@ -50,6 +51,7 @@ export async function removeEnvKey(key: string): Promise<void> {
     content = content.replace(regex, `${key}=`);
   }
   writeEnvFile(content);
+  delete process.env[key];
 }
 
 /** 寫入重啟信號檔後結束程序，start.command / start.bat 偵測到後自動重啟 */

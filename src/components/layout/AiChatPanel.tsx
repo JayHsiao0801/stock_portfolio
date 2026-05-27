@@ -11,7 +11,7 @@ import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
 
 interface AiChatPanelProps {
-  availableProviders: { claude: boolean; gemini: boolean };
+  availableProviders: { claude: boolean; gemini: boolean; groq: boolean };
   portfolioContext: string;
 }
 
@@ -19,17 +19,15 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
   const { aiProvider, setAiProvider, chatMessages, setChatMessages, clearChatMessages } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const hasAny = availableProviders.claude || availableProviders.gemini;
+  const hasAny = availableProviders.claude || availableProviders.gemini || availableProviders.groq;
   const effectiveProvider =
-    aiProvider === "claude" && availableProviders.claude
-      ? "claude"
-      : aiProvider === "gemini" && availableProviders.gemini
-        ? "gemini"
-        : availableProviders.claude
-          ? "claude"
-          : availableProviders.gemini
-            ? "gemini"
-            : null;
+    aiProvider === "claude" && availableProviders.claude ? "claude"
+    : aiProvider === "gemini" && availableProviders.gemini ? "gemini"
+    : aiProvider === "groq" && availableProviders.groq ? "groq"
+    : availableProviders.claude ? "claude"
+    : availableProviders.gemini ? "gemini"
+    : availableProviders.groq ? "groq"
+    : null;
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useStreamingChat({
     api: "/api/chat",
@@ -42,7 +40,8 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const showToggle = availableProviders.claude && availableProviders.gemini;
+  const activeCount = [availableProviders.claude, availableProviders.gemini, availableProviders.groq].filter(Boolean).length;
+  const showToggle = activeCount > 1;
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -67,7 +66,7 @@ export function AiChatPanel({ availableProviders, portfolioContext }: AiChatPane
         )}
         {showToggle && (
           <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
-            {(["claude", "gemini"] as const).map((p) => (
+            {(["claude", "gemini", "groq"] as const).filter((p) => availableProviders[p]).map((p) => (
               <button
                 key={p}
                 onClick={() => setAiProvider(p)}

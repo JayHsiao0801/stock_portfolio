@@ -6,12 +6,12 @@ import type { ChatMessage } from "@/hooks/useStreamingChat";
 
 interface AppState {
   activePortfolioId: string | null;
-  aiProvider: "claude" | "gemini";
+  aiProvider: "claude" | "gemini" | "groq";
   isChatOpen: boolean;
   portfolioContext: string;
   chatMessages: ChatMessage[];
   setActivePortfolioId: (id: string | null) => void;
-  setAiProvider: (provider: "claude" | "gemini") => void;
+  setAiProvider: (provider: "claude" | "gemini" | "groq") => void;
   toggleChat: () => void;
   setChatOpen: (open: boolean) => void;
   setPortfolioContext: (ctx: string) => void;

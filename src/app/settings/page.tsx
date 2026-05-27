@@ -7,9 +7,10 @@ import { ApiKeySettings } from "@/components/settings/ApiKeySettings";
 import { getEnvKeyStatus } from "@/actions/envActions";
 
 export default async function SettingsPage() {
-  const [claude, gemini] = await Promise.all([
+  const [claude, gemini, groq] = await Promise.all([
     getEnvKeyStatus("ANTHROPIC_API_KEY"),
     getEnvKeyStatus("GOOGLE_GENERATIVE_AI_API_KEY"),
+    getEnvKeyStatus("GROQ_API_KEY"),
   ]);
 
   return (
@@ -36,6 +37,8 @@ export default async function SettingsPage() {
             claudePreview={claude.preview}
             geminiSet={gemini.set}
             geminiPreview={gemini.preview}
+            groqSet={groq.set}
+            groqPreview={groq.preview}
           />
 
           <div className="space-y-3">

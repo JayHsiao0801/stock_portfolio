@@ -1,52 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Eye, EyeOff, RotateCcw, X, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setEnvKey, removeEnvKey, restartServer } from "@/actions/envActions";
-
-function RestartBanner() {
-  const [restarting, setRestarting] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const handleRestart = () => {
-    setRestarting(true);
-    startTransition(async () => {
-      await restartServer();
-    });
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs">
-      <span className="text-amber-600 dark:text-amber-400">
-        {restarting ? "重啟中，請稍候…" : "已儲存，需重啟伺服器才能生效"}
-      </span>
-      {!restarting && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-6 text-xs gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-          onClick={handleRestart}
-          disabled={isPending}
-        >
-          <RefreshCw className="h-3 w-3" />
-          立即重啟
-        </Button>
-      )}
-    </div>
-  );
-}
+import { setEnvKey, removeEnvKey } from "@/actions/envActions";
 
 interface KeyRowProps {
   label: string;
   envKey: string;
   isSet: boolean;
   preview: string | null;
-  onChanged: () => void;
+  hint?: { text: string; url: string };
 }
 
-function KeyRow({ label, envKey, isSet: initialSet, preview: initialPreview, onChanged }: KeyRowProps) {
+function KeyRow({ label, envKey, isSet: initialSet, preview: initialPreview, hint }: KeyRowProps) {
+  const router = useRouter();
   const [isSet, setIsSet] = useState(initialSet);
   const [preview, setPreview] = useState(initialPreview);
   const [editing, setEditing] = useState(false);
@@ -65,7 +35,7 @@ function KeyRow({ label, envKey, isSet: initialSet, preview: initialPreview, onC
       setPreview(masked);
       setInputValue("");
       setEditing(false);
-      onChanged();
+      router.refresh();
     });
   };
 
@@ -76,7 +46,7 @@ function KeyRow({ label, envKey, isSet: initialSet, preview: initialPreview, onC
       setPreview(null);
       setEditing(false);
       setInputValue("");
-      onChanged();
+      router.refresh();
     });
   };
 
@@ -84,7 +54,19 @@ function KeyRow({ label, envKey, isSet: initialSet, preview: initialPreview, onC
     <div className="p-4 rounded-lg border border-border bg-card space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-medium">{label}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{label}</span>
+            {hint && (
+              <a
+                href={hint.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-primary hover:underline"
+              >
+                {hint.text} ↗
+              </a>
+            )}
+          </div>
           <div className="text-[11px] font-mono text-muted-foreground mt-0.5">{envKey}</div>
         </div>
         {isSet ? (
@@ -150,29 +132,33 @@ interface Props {
   claudePreview: string | null;
   geminiSet: boolean;
   geminiPreview: string | null;
+  groqSet: boolean;
+  groqPreview: string | null;
 }
 
-export function ApiKeySettings({ claudeSet, claudePreview, geminiSet, geminiPreview }: Props) {
-  const [needsRestart, setNeedsRestart] = useState(false);
-
+export function ApiKeySettings({ claudeSet, claudePreview, geminiSet, geminiPreview, groqSet, groqPreview }: Props) {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-medium text-muted-foreground">AI 金鑰</h2>
+      <KeyRow
+        label="Groq（免費）"
+        envKey="GROQ_API_KEY"
+        isSet={groqSet}
+        preview={groqPreview}
+        hint={{ text: "免費申請 API Key", url: "https://console.groq.com" }}
+      />
       <KeyRow
         label="Anthropic Claude"
         envKey="ANTHROPIC_API_KEY"
         isSet={claudeSet}
         preview={claudePreview}
-        onChanged={() => setNeedsRestart(true)}
       />
       <KeyRow
         label="Google Gemini"
         envKey="GOOGLE_GENERATIVE_AI_API_KEY"
         isSet={geminiSet}
         preview={geminiPreview}
-        onChanged={() => setNeedsRestart(true)}
       />
-      {needsRestart && <RestartBanner />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface ChatMessage {
   id: string;
@@ -20,13 +20,9 @@ export function useStreamingChat(options: {
   const onChangeRef = useRef(options.onMessagesChange);
   onChangeRef.current = options.onMessagesChange;
 
-  const setMessagesAndSync = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
-    setMessages((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      onChangeRef.current?.(next);
-      return next;
-    });
-  }, []);
+  useEffect(() => {
+    onChangeRef.current?.(messages);
+  }, [messages]);
 
   const sendMessage = useCallback(
     async (userContent: string, extraBody?: Record<string, unknown>) => {
@@ -39,11 +35,11 @@ export function useStreamingChat(options: {
       };
 
       const nextMessages = [...messages, userMessage];
-      setMessagesAndSync(nextMessages);
+      setMessages(nextMessages);
       setIsLoading(true);
 
       const assistantId = (Date.now() + 1).toString();
-      setMessagesAndSync((prev) => [
+      setMessages((prev) => [
         ...prev,
         { id: assistantId, role: "assistant", content: "" },
       ]);
@@ -74,7 +70,7 @@ export function useStreamingChat(options: {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
-          setMessagesAndSync((prev) =>
+          setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId ? { ...m, content: accumulated } : m
             )
@@ -82,7 +78,7 @@ export function useStreamingChat(options: {
         }
 
         if (!accumulated.trim()) {
-          setMessagesAndSync((prev) =>
+          setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
                 ? { ...m, content: "❌ AI 未回應，可能是 API 額度不足（429）或網路問題，請稍後再試。" }
@@ -92,7 +88,7 @@ export function useStreamingChat(options: {
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "發生錯誤";
-        setMessagesAndSync((prev) =>
+        setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? { ...m, content: `❌ ${errMsg}` }
