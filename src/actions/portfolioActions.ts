@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export async function getPortfolios() {
-  return prisma.portfolio.findMany({
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-    include: { _count: { select: { holdings: true } } },
-  });
+  try {
+    return await prisma.portfolio.findMany({
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      include: { _count: { select: { holdings: true } } },
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function getPortfolioWithHoldings(id: string) {
@@ -18,10 +22,14 @@ export async function getPortfolioWithHoldings(id: string) {
 }
 
 export async function getAllPortfoliosWithHoldings() {
-  return prisma.portfolio.findMany({
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-    include: { holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
-  });
+  try {
+    return await prisma.portfolio.findMany({
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      include: { holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function copyPortfolio(
@@ -142,5 +150,9 @@ export async function setActivePortfolio(id: string) {
 }
 
 export async function getAppSettings() {
-  return prisma.appSettings.findUnique({ where: { id: "singleton" } });
+  try {
+    return await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+  } catch {
+    return null;
+  }
 }
