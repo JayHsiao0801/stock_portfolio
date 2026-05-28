@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   await Promise.allSettled(
     tickers.map(async (ticker) => {
       try {
-        const quote = await yf.quote(ticker);
+        const quote = await yf.quote(ticker, {}, { validateResult: false });
         const price = quote?.regularMarketPrice;
         if (typeof price === "number" && price > 0) {
           result[ticker] = price;

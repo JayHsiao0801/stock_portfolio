@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await yf.chart(ticker, { period1, interval: "1d" });
+    const result = await yf.chart(ticker, { period1, interval: "1d" }, { validateResult: false });
     const candles = (result.quotes ?? [])
       .filter((q) => q.open != null && q.close != null)
       .map((q) => ({

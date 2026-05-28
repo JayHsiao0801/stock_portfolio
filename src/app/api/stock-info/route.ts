@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const [quote, summary] = await Promise.allSettled([
-      yf.quote(ticker),
-      yf.quoteSummary(ticker, { modules: ["summaryDetail", "defaultKeyStatistics", "financialData"] }),
+      yf.quote(ticker, {}, { validateResult: false }),
+      yf.quoteSummary(ticker, { modules: ["summaryDetail", "defaultKeyStatistics", "financialData"] }, { validateResult: false }),
     ]);
 
     const q = quote.status === "fulfilled" ? quote.value : null;

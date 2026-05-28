@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const quote = await yf.quote(ticker);
+    const quote = await yf.quote(ticker, {}, { validateResult: false });
     return NextResponse.json({
       ticker,
       price: quote.regularMarketPrice ?? 0,
