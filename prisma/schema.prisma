@@ -40,7 +40,6 @@ model Holding {
   updatedAt   DateTime  @updatedAt
   transactions Transaction[]
 
-  @@unique([portfolioId, ticker])
   @@index([portfolioId])
 }
 
