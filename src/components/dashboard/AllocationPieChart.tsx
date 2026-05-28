@@ -18,6 +18,7 @@ export const COLORS = [
 
 const TW_COLORS = ["#0A84FF","#5AC8FA","#BF5AF2","#FF2D55","#FFD60A","#30D158","#FF9F0A","#FF453A"];
 const US_COLORS = ["#FF9F0A","#30D158","#FF453A","#BF5AF2","#5AC8FA","#0A84FF","#FFD60A","#FF2D55"];
+const CN_COLORS = ["#FF2D55","#FF9F0A","#FFD60A","#30D158","#0A84FF","#BF5AF2","#5AC8FA","#FF453A"];
 
 const fmt = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -154,7 +155,7 @@ function MiniDonut({
       {/* 圖例 */}
       <div className="flex-1 min-w-0 space-y-2">
         {data.map((d, i) => {
-          const pct = total > 0 ? (d.value / total) * 100 : 0;
+          const pct = categoryTotal > 0 ? (d.value / categoryTotal) * 100 : 0;
           const color = colors[i % colors.length];
           return (
             <div key={d.ticker} className="flex items-center gap-2 min-w-0">
@@ -203,10 +204,19 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
 
   // 同時更新 colorMap 用的 COLORS（依全部排序決定顏色，保持跟 holdings table 一致）
   const twData = allData.filter((d) => d.ticker.endsWith(".TW") || d.ticker.endsWith(".TWO"));
-  const usData = allData.filter((d) => !d.ticker.endsWith(".TW") && !d.ticker.endsWith(".TWO"));
+  const cnData = allData.filter((d) => d.ticker.endsWith(".SS") || d.ticker.endsWith(".SZ"));
+  const usData = allData.filter((d) =>
+    !d.ticker.endsWith(".TW") && !d.ticker.endsWith(".TWO") &&
+    !d.ticker.endsWith(".SS") && !d.ticker.endsWith(".SZ")
+  );
   const total = allData.reduce((s, d) => s + d.value, 0);
 
   const sharedProps = { total, isDark, shadow, strokeColor, textPrimary, textMuted, textSecondary, dividerColor };
+  const groups = [
+    { data: twData, colors: TW_COLORS, label: "台股" },
+    { data: cnData, colors: CN_COLORS, label: "A股" },
+    { data: usData, colors: US_COLORS, label: "美股" },
+  ].filter((g) => g.data.length > 0);
 
   if (allData.length === 0) {
     return (
@@ -233,11 +243,14 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
       </CardHeader>
       <CardContent className="pt-5">
         <div className="flex gap-6 flex-wrap">
-          <MiniDonut data={twData} colors={TW_COLORS} label="台股" {...sharedProps} />
-          {twData.length > 0 && usData.length > 0 && (
-            <div className="w-px self-stretch" style={{ background: dividerColor }} />
-          )}
-          <MiniDonut data={usData} colors={US_COLORS} label="美股" {...sharedProps} />
+          {groups.map((g, i) => (
+            <>
+              <MiniDonut key={g.label} data={g.data} colors={g.colors} label={g.label} {...sharedProps} />
+              {i < groups.length - 1 && (
+                <div key={`divider-${i}`} className="w-px self-stretch" style={{ background: dividerColor }} />
+              )}
+            </>
+          ))}
         </div>
       </CardContent>
     </Card>
