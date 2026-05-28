@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Search, GripVertical } from "lucide-react";
 import {
@@ -183,13 +183,20 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
   const [isPending, startTransition] = useTransition();
   const [orderedHoldings, setOrderedHoldings] = useState(holdings);
 
+  useEffect(() => {
+    setOrderedHoldings(holdings);
+  }, [holdings]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const handleDelete = (id: string) => {
     if (!confirm("確定刪除此持股？")) return;
-    startTransition(() => deleteHolding(id));
+    startTransition(async () => {
+      await deleteHolding(id);
+      router.refresh();
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

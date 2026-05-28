@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { z } from "zod/v4";
@@ -41,6 +42,7 @@ interface Props {
 }
 
 export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -120,6 +122,7 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
       }
       reset({ currency: "TWD" });
       onOpenChange(false);
+      router.refresh();
     });
   };
 
