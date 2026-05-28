@@ -257,7 +257,7 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
                 <CreditCard className="h-3.5 w-3.5 text-destructive/60" />
               </div>
             </div>
-            <div className={cn("text-xl font-semibold tracking-tight tabular-nums leading-none", totalMonthlyOutflow > 0 ? "text-loss" : "")}>
+            <div className={cn("text-xl font-semibold tracking-tight tabular-nums leading-none", totalMonthlyOutflow > 0 ? "text-orange-500" : "")}>
               {totalMonthlyOutflow > 0 ? formatCurrency(Math.round(totalMonthlyOutflow)) : "—"}
             </div>
             {totalMonthlyOutflow > 0 && (
@@ -282,7 +282,7 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
                 <Calculator className="h-3.5 w-3.5 text-primary" />
               </div>
             </div>
-            <div className="text-xl font-semibold tracking-tight tabular-nums leading-none">
+            <div className={cn("text-xl font-semibold tracking-tight tabular-nums leading-none", afterTaxDividend > 0 ? "text-profit" : "")}>
               {afterTaxDividend > 0 ? formatCurrency(afterTaxDividend) : "—"}
             </div>
             {totalAnnualDividend > 0 && (
