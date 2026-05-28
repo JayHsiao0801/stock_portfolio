@@ -32,10 +32,12 @@ async function getTwNames(): Promise<Map<string, string>> {
 
 function inferCurrency(symbol: string, exchange: string): string {
   if (symbol.endsWith(".TW") || symbol.endsWith(".TWO")) return "TWD";
+  if (symbol.endsWith(".SS") || symbol.endsWith(".SZ")) return "CNY";
   if (symbol.endsWith(".HK")) return "HKD";
   if (symbol.endsWith(".L")) return "GBP";
   if (symbol.endsWith(".T")) return "JPY";
   if (["TAI", "TWO"].includes(exchange)) return "TWD";
+  if (["SHH", "SHZ"].includes(exchange)) return "CNY";
   return "USD";
 }
 
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
     const searchResult = await yf.search(q, {}, { validateResult: false });
     type Quote = { symbol: string; isYahooFinance?: boolean; quoteType?: string; [key: string]: unknown };
     const filtered = ((searchResult.quotes ?? []) as Quote[])
-      .filter((r) => r.isYahooFinance && ["EQUITY", "ETF", "MUTUALFUND"].includes(r.quoteType ?? ""))
+      .filter((r) => r.isYahooFinance && ["EQUITY", "ETF", "MUTUALFUND", "FUTURE"].includes(r.quoteType ?? ""))
       .slice(0, 8);
 
     const hasTW = filtered.some((r) => r.symbol.endsWith(".TW") || r.symbol.endsWith(".TWO"));
