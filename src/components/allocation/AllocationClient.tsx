@@ -141,6 +141,15 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
     ? Math.round(parseFloat(loanPeriodInput) * 12) || 0
     : Math.round(parseFloat(loanPeriodInput)) || 0;
 
+  const monthlyLoanPayment = (() => {
+    if (remainingLoan <= 0 || loanMonths <= 0) return 0;
+    const r = loanInterestRate / 100 / 12;
+    if (r === 0) return remainingLoan / loanMonths;
+    return remainingLoan * r * Math.pow(1 + r, loanMonths) / (Math.pow(1 + r, loanMonths) - 1);
+  })();
+  const monthlyExpense = retirementSettings.monthlyExpense;
+  const totalMonthlyOutflow = monthlyExpense + monthlyLoanPayment;
+
   return (
     <div className="space-y-5 pb-6">
       {/* 頁面標題 */}
@@ -239,18 +248,28 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
           </CardContent>
         </Card>
 
-        {/* 剩餘貸款（唯讀，在下方貸款區編輯） */}
+        {/* 每月支出 */}
         <Card className="border-border/60">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium text-muted-foreground tracking-wide">剩餘貸款</span>
+              <span className="text-xs font-medium text-muted-foreground tracking-wide">每月支出</span>
               <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-destructive/10">
                 <CreditCard className="h-3.5 w-3.5 text-destructive/60" />
               </div>
             </div>
-            <div className={cn("text-xl font-semibold tracking-tight tabular-nums leading-none", remainingLoan > 0 ? "text-loss" : "")}>
-              {remainingLoan > 0 ? formatCurrency(remainingLoan) : "—"}
+            <div className={cn("text-xl font-semibold tracking-tight tabular-nums leading-none", totalMonthlyOutflow > 0 ? "text-loss" : "")}>
+              {totalMonthlyOutflow > 0 ? formatCurrency(Math.round(totalMonthlyOutflow)) : "—"}
             </div>
+            {totalMonthlyOutflow > 0 && (
+              <div className="text-xs mt-2 text-muted-foreground space-y-0.5">
+                {monthlyExpense > 0 && (
+                  <div className="tabular-nums">生活費 {formatCurrency(monthlyExpense)}</div>
+                )}
+                {monthlyLoanPayment > 0 && (
+                  <div className="tabular-nums">還款 {formatCurrency(Math.round(monthlyLoanPayment))}</div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
