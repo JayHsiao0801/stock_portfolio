@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,7 +159,7 @@ function MiniDonut({
           const pct = categoryTotal > 0 ? (d.value / categoryTotal) * 100 : 0;
           const color = colors[i % colors.length];
           return (
-            <div key={d.ticker} className="flex items-center gap-2 min-w-0">
+            <div key={`${d.ticker}-${i}`} className="flex items-center gap-2 min-w-0">
               <div className="h-2 w-2 rounded-sm shrink-0" style={{ background: color }} />
               <span className="truncate flex-1 text-xs" style={{ color: textSecondary }}>
                 {d.name}
@@ -244,12 +245,12 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
       <CardContent className="pt-5">
         <div className="flex gap-6 flex-wrap">
           {groups.map((g, i) => (
-            <>
-              <MiniDonut key={g.label} data={g.data} colors={g.colors} label={g.label} {...sharedProps} />
+            <React.Fragment key={g.label}>
+              <MiniDonut data={g.data} colors={g.colors} label={g.label} {...sharedProps} />
               {i < groups.length - 1 && (
-                <div key={`divider-${i}`} className="w-px self-stretch" style={{ background: dividerColor }} />
+                <div className="w-px self-stretch" style={{ background: dividerColor }} />
               )}
-            </>
+            </React.Fragment>
           ))}
         </div>
       </CardContent>
