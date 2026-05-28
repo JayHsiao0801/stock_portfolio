@@ -98,6 +98,7 @@ function SortableRow({
         <button
           {...attributes}
           {...listeners}
+          suppressHydrationWarning
           className="opacity-0 group-hover:opacity-40 hover:!opacity-80 cursor-grab active:cursor-grabbing text-muted-foreground transition-opacity touch-none"
           tabIndex={-1}
         >
