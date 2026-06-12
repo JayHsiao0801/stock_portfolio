@@ -48,3 +48,24 @@ export function formatCurrency(value: number, currency = "TWD"): string {
 export function formatPercent(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
+
+export const DISPLAY_CURRENCIES = [
+  { code: "TWD", label: "TWD" },
+  { code: "USD", label: "USD" },
+  { code: "CNY", label: "CNY" },
+  { code: "THB", label: "THB" },
+  { code: "JPY", label: "JPY" },
+] as const;
+
+// rates: 1 TWD = X 外幣（從 /api/exchange-rates 取得）
+// 以 TWD 為中介，支援任意兩幣互換
+export function convertCurrency(
+  amount: number,
+  from: string,
+  to: string,
+  rates: Record<string, number>
+): number {
+  if (from === to) return amount;
+  const toTWD = from === "TWD" ? amount : amount / (rates[from] ?? 1);
+  return to === "TWD" ? toTWD : toTWD * (rates[to] ?? 1);
+}

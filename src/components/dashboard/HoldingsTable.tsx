@@ -2,7 +2,9 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Search, GripVertical } from "lucide-react";
+import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
 import {
   DndContext,
   closestCenter,
@@ -25,10 +27,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatPercent, calcUnrealizedPnL, calcNetProceeds } from "@/lib/stock/calculator";
+import { formatCurrency, formatPercent, calcUnrealizedPnL, calcNetProceeds, DISPLAY_CURRENCIES, convertCurrency } from "@/lib/stock/calculator";
 import { deleteHolding, updateHoldingOrder } from "@/actions/holdingActions";
 import { HoldingFormDialog } from "./HoldingFormDialog";
 import type { Holding } from "@/generated/prisma/client";
+
 
 interface HoldingsTableProps {
   holdings: Holding[];
@@ -45,6 +48,8 @@ interface RowProps {
   priceLoading?: boolean;
   colorMap?: Record<string, string>;
   brokerageFeeRate: number;
+  displayCurrency: string;
+  rates: Record<string, number>;
   onEdit: (h: Holding) => void;
   onDelete: (id: string) => void;
   onSearch: (ticker: string) => void;
@@ -52,6 +57,8 @@ interface RowProps {
 }
 
 function SortableRow({
+  displayCurrency,
+  rates,
   holding: h,
   priceMap,
   priceLoading,
@@ -86,6 +93,10 @@ function SortableRow({
   const pnl = netProceeds - trueCost;
   const pnlPct = trueCost > 0 ? (pnl / trueCost) * 100 : 0;
   const isProfit = pnl >= 0;
+
+  const nativeCurrency = h.currency || "TWD";
+  const fmt = (amount: number) =>
+    formatCurrency(convertCurrency(amount, nativeCurrency, displayCurrency, rates), displayCurrency);
 
   return (
     <TableRow
@@ -132,7 +143,7 @@ function SortableRow({
         {h.avgCost.toFixed(2)}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3 text-muted-foreground">
-        {formatCurrency(Number(h.shares) * Number(h.avgCost))}
+        {fmt(Number(h.shares) * Number(h.avgCost))}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3">
         {priceLoading ? (
@@ -142,12 +153,12 @@ function SortableRow({
         )}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3">
-        {formatCurrency(netProceeds)}
+        {fmt(netProceeds)}
       </TableCell>
       <TableCell className={cn("text-right tabular-nums font-medium py-3", isProfit ? "text-profit" : "text-loss")}>
         <div className="flex items-center justify-end gap-0.5">
           {isProfit ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {formatCurrency(Math.abs(pnl))}
+          {fmt(Math.abs(pnl))}
         </div>
       </TableCell>
       <TableCell className={cn("text-right tabular-nums font-semibold py-3", isProfit ? "text-profit" : "text-loss")}>
@@ -182,6 +193,13 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [orderedHoldings, setOrderedHoldings] = useState(holdings);
+  const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
+
+  const { data: rates = {} } = useSWR<Record<string, number>>(
+    "/api/exchange-rates",
+    (url: string) => fetch(url).then((r) => r.json()),
+    { refreshInterval: 60 * 60 * 1000, revalidateOnFocus: false }
+  );
 
   useEffect(() => {
     setOrderedHoldings(holdings);
@@ -211,17 +229,37 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-sm font-semibold tracking-tight">持股明細</h2>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1.5"
-          onClick={() => { setEditTarget(null); setDialogOpen(true); }}
-        >
-          <Plus className="h-3 w-3" />
-          新增持股
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border border-border/60 overflow-hidden text-[11px]">
+            {DISPLAY_CURRENCIES.map((c, i) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => setDisplayCurrency(c.code)}
+                className={cn(
+                  "px-2 py-1 font-medium transition-colors",
+                  i > 0 && "border-l border-border/60",
+                  displayCurrency === c.code
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => { setEditTarget(null); setDialogOpen(true); }}
+          >
+            <Plus className="h-3 w-3" />
+            新增持股
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
@@ -235,7 +273,7 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">均價</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">投入成本</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">現價</TableHead>
-                <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">預估收入(台幣)</TableHead>
+                <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">預估收入</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">損益</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium h-9 text-right">報酬率</TableHead>
                 <TableHead className="w-16 h-9" />
@@ -258,6 +296,8 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
                     priceLoading={priceLoading}
                     colorMap={colorMap}
                     brokerageFeeRate={brokerageFeeRate}
+                    displayCurrency={displayCurrency}
+                    rates={rates}
                     onEdit={(h) => { setEditTarget(h); setDialogOpen(true); }}
                     onDelete={handleDelete}
                     onSearch={(ticker) => router.push(`/stock/${encodeURIComponent(ticker)}`)}

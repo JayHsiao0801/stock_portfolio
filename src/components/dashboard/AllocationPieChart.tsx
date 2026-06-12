@@ -81,6 +81,7 @@ function MiniDonut({
   textMuted,
   textSecondary,
   dividerColor,
+  single,
 }: {
   data: DataPoint[];
   colors: string[];
@@ -93,8 +94,13 @@ function MiniDonut({
   textMuted: string;
   textSecondary: string;
   dividerColor: string;
+  single?: boolean;
 }) {
   const categoryTotal = data.reduce((s, d) => s + d.value, 0);
+  const donutSize = single ? 196 : 148;
+  const innerR = single ? 58 : 43;
+  const outerR = single ? 88 : 66;
+  const countFontSize = single ? 26 : 18;
 
   if (data.length === 0) {
     return (
@@ -105,9 +111,9 @@ function MiniDonut({
   }
 
   return (
-    <div className="flex-1 min-w-0 flex items-center gap-5">
+    <div className={single ? "flex items-center gap-8 w-full max-w-xl" : "flex-1 min-w-0 flex items-center gap-5"}>
       {/* 圓環 */}
-      <div className="relative shrink-0" style={{ height: 148, width: 148 }}>
+      <div className="relative shrink-0" style={{ height: donutSize, width: donutSize }}>
         <div className="absolute inset-0" style={{ filter: shadow }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -123,8 +129,8 @@ function MiniDonut({
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={43}
-                outerRadius={66}
+                innerRadius={innerR}
+                outerRadius={outerR}
                 paddingAngle={0}
                 cornerRadius={5}
                 dataKey="value"
@@ -144,35 +150,35 @@ function MiniDonut({
           </ResponsiveContainer>
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-          <span className="tabular-nums font-bold leading-none" style={{ fontSize: 18, color: textPrimary }}>
+          <span className="tabular-nums font-bold leading-none" style={{ fontSize: countFontSize, color: textPrimary }}>
             {data.length}
           </span>
-          <span style={{ fontSize: 9, color: textMuted, marginTop: 2 }}>
+          <span style={{ fontSize: single ? 11 : 9, color: textMuted, marginTop: 2 }}>
             檔{label}
           </span>
         </div>
       </div>
 
       {/* 圖例 */}
-      <div className="flex-1 min-w-0 space-y-2">
+      <div className={single ? "flex-1 min-w-0 space-y-2.5" : "flex-1 min-w-0 space-y-2"}>
         {data.map((d, i) => {
           const pct = categoryTotal > 0 ? (d.value / categoryTotal) * 100 : 0;
           const color = colors[i % colors.length];
           return (
             <div key={`${d.ticker}-${i}`} className="flex items-center gap-2 min-w-0">
-              <div className="h-2 w-2 rounded-sm shrink-0" style={{ background: color }} />
-              <span className="truncate flex-1 text-xs" style={{ color: textSecondary }}>
+              <div className={single ? "h-2.5 w-2.5 rounded-sm shrink-0" : "h-2 w-2 rounded-sm shrink-0"} style={{ background: color }} />
+              <span className={`truncate flex-1 ${single ? "text-sm" : "text-xs"}`} style={{ color: textSecondary }}>
                 {d.name}
               </span>
-              <span className="text-xs font-semibold tabular-nums shrink-0 w-11 text-right" style={{ color: textPrimary }}>
+              <span className={`${single ? "text-sm" : "text-xs"} font-semibold tabular-nums shrink-0 w-14 text-right`} style={{ color: textPrimary }}>
                 {pct.toFixed(1)}%
               </span>
             </div>
           );
         })}
         <div className="pt-2 mt-0.5 flex items-center justify-between" style={{ borderTop: `1px solid ${dividerColor}` }}>
-          <span style={{ fontSize: 10, color: textMuted }}>{label}小計</span>
-          <span className="text-xs font-bold tabular-nums" style={{ color: textPrimary }}>
+          <span style={{ fontSize: single ? 11 : 10, color: textMuted }}>{label}小計</span>
+          <span className={`${single ? "text-sm" : "text-xs"} font-bold tabular-nums`} style={{ color: textPrimary }}>
             {fmt.format(categoryTotal)}
           </span>
         </div>
@@ -243,10 +249,10 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
         </div>
       </CardHeader>
       <CardContent className="pt-5">
-        <div className="flex gap-6 flex-wrap">
+        <div className={groups.length === 1 ? "flex justify-center" : "flex gap-6 flex-wrap"}>
           {groups.map((g, i) => (
             <React.Fragment key={g.label}>
-              <MiniDonut data={g.data} colors={g.colors} label={g.label} {...sharedProps} />
+              <MiniDonut data={g.data} colors={g.colors} label={g.label} single={groups.length === 1} {...sharedProps} />
               {i < groups.length - 1 && (
                 <div className="w-px self-stretch" style={{ background: dividerColor }} />
               )}

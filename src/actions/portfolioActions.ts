@@ -36,7 +36,10 @@ export async function getPortfolios() {
 export async function getPortfolioWithHoldings(id: string) {
   return prisma.portfolio.findUnique({
     where: { id },
-    include: { holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+    include: {
+      holdings: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      loans: { orderBy: { createdAt: "asc" } },
+    },
   });
 }
 
@@ -94,11 +97,24 @@ export async function updateHoldingDividendYield(holdingId: string, dividendYiel
   await withDbInit(() => prisma.holding.update({ where: { id: holdingId }, data: { dividendYield } }));
 }
 
-export async function updatePortfolioLoan(
-  id: string,
-  data: { remainingLoan: number; loanInterestRate: number; loanMonths: number }
+export async function createLoan(
+  portfolioId: string,
+  data: { label?: string; remainingLoan: number; loanInterestRate: number; loanMonths: number }
 ) {
-  await withDbInit(() => prisma.portfolio.update({ where: { id }, data }));
+  await withDbInit(() => prisma.loan.create({ data: { portfolioId, ...data } }));
+  revalidatePath("/allocation");
+}
+
+export async function updateLoan(
+  id: string,
+  data: { label?: string; remainingLoan: number; loanInterestRate: number; loanMonths: number }
+) {
+  await withDbInit(() => prisma.loan.update({ where: { id }, data }));
+  revalidatePath("/allocation");
+}
+
+export async function deleteLoan(id: string) {
+  await withDbInit(() => prisma.loan.delete({ where: { id } }));
   revalidatePath("/allocation");
 }
 
@@ -107,6 +123,7 @@ export async function updateRetirementSettings(data: {
   monthlyExpense?: number;
   dividendTaxRate?: number;
   brokerageFeeRate?: number;
+  stockMarket?: string;
 }) {
   await withDbInit(() =>
     prisma.appSettings.upsert({
@@ -126,6 +143,7 @@ export async function getRetirementSettings() {
       monthlyExpense: s?.monthlyExpense ?? 0,
       dividendTaxRate: s?.dividendTaxRate ?? 10.0,
       brokerageFeeRate: s?.brokerageFeeRate ?? 0.1425,
+      stockMarket: s?.stockMarket ?? "tw",
     };
   } catch {
     return {
@@ -133,6 +151,7 @@ export async function getRetirementSettings() {
       monthlyExpense: 0,
       dividendTaxRate: 10.0,
       brokerageFeeRate: 0.1425,
+      stockMarket: "tw",
     };
   }
 }

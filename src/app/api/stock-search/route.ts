@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import YahooFinance from "yahoo-finance2";
+import { prisma } from "@/lib/prisma";
 
 const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
@@ -41,10 +42,70 @@ function inferCurrency(symbol: string, exchange: string): string {
   return "USD";
 }
 
+// 陸股模式：Sina Finance 建議 API（GBK 編碼）
+// 實際格式：exchangeCode,type,code,exchangeCode,name,...
+// parts[0] = sz/sh + code, parts[2] = 純數字代號, parts[4] = 公司名稱
+async function searchCnStocks(q: string) {
+  const url = `https://suggest3.sinajs.cn/suggest/type=11,12,13&key=${encodeURIComponent(q)}&refer=&req=8`;
+  const res = await fetch(url, {
+    headers: { Referer: "https://finance.sina.com.cn" },
+    signal: AbortSignal.timeout(5000),
+  });
+  // Sina API 回傳 GBK 編碼
+  const buffer = await res.arrayBuffer();
+  const text = new TextDecoder("gbk").decode(buffer);
+
+  const match = text.match(/suggestvalue="([^"]*)"/);
+  if (!match || !match[1]) return [];
+
+  return match[1]
+    .split(";")
+    .filter(Boolean)
+    .map((entry) => {
+      const parts = entry.split(",");
+      if (parts.length < 5) return null;
+      const exchangeCode = parts[0]; // e.g. "sz000977" or "sh600036"
+      const code = parts[2];         // e.g. "000977"
+      const name = parts[4];         // e.g. "浪潮信息"
+      if (!code || !name) return null;
+      const isSZ = exchangeCode.startsWith("sz");
+      return {
+        symbol: `${code}${isSZ ? ".SZ" : ".SS"}`,
+        name,
+        exchange: isSZ ? "深交所" : "上交所",
+        sector: "",
+        currency: "CNY",
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+async function getStockMarket(): Promise<string> {
+  try {
+    const s = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+    return s?.stockMarket ?? "tw";
+  } catch {
+    return "tw";
+  }
+}
+
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim();
   if (!q || q.length < 1) return NextResponse.json([]);
 
+  const market = await getStockMarket();
+
+  if (market === "cn") {
+    try {
+      const results = await searchCnStocks(q);
+      return NextResponse.json(results);
+    } catch {
+      return NextResponse.json([]);
+    }
+  }
+
+  // tw 模式（預設）：Yahoo Finance
   try {
     const searchResult = await yf.search(q, {}, { validateResult: false });
     type Quote = { symbol: string; isYahooFinance?: boolean; quoteType?: string; [key: string]: unknown };

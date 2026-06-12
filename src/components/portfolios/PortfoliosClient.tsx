@@ -122,12 +122,6 @@ export function PortfoliosClient({ portfolios, retirementSettings }: Props) {
                       {p.totalDividend > 0 ? formatCurrency(p.totalDividend) : "—"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-1">貸款</p>
-                    <p className={cn("text-sm font-medium tabular-nums tracking-tight", Number(p.remainingLoan) > 0 ? "text-loss" : "text-muted-foreground")}>
-                      {Number(p.remainingLoan) > 0 ? formatCurrency(Number(p.remainingLoan)) : "—"}
-                    </p>
-                  </div>
                 </div>
 
                 {/* FIRE 進度條 */}

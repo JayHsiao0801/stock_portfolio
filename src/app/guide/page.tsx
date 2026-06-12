@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick, GripVertical } from "lucide-react";
+import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
@@ -45,29 +45,31 @@ export default function GuidePage() {
           </div>
 
           <Section icon={Layers2} title="各組合重點">
-            <Item label="用途" desc="一覽所有投資組合的摘要，包含總資產、成本、配息、貸款金額與占總資產比例。" />
+            <Item label="用途" desc="一覽所有投資組合的摘要，包含總資產、成本、配息與 FIRE 達成進度。" />
             <Item label="切換組合" desc="點擊任一卡片即可將該組合設為目前使用組合，並自動跳轉到股票配置頁。" />
             <Item label="配息顯示" desc="配息數值來自「總資產配置 → 配息」區塊設定的年化殖利率，尚未輸入殖利率時顯示「—」。" />
+            <Item label="FIRE 進度條" desc="顯示「稅後月配息 ÷ 每月生活費目標」的達成率，需填入每月生活費目標才會顯示（可點擊「總資產配置」頁的「每月支出」卡片直接編輯，或至退休規劃設定填入）。" />
           </Section>
 
           <Section icon={LayoutDashboard} title="股票配置">
             <Item label="用途" desc="顯示目前選定組合的所有持股，包含各股現價、預估收入、未實現損益與報酬率。" />
-            <Item label="預估收入" desc="賣出後實際入帳的估算金額，已扣除手續費（預設 0.1425%）與交易稅（台股 0.3%、台股 ETF 0.1%、美股 0%）。" />
+            <Item label="欄位說明" desc="「均價」為買入平均成本；「投入成本」= 股數 × 均價，顯示實際投入的本金；「預估收入」為扣除手續費與交易稅後的估算入帳金額。" />
             <Item label="損益 / 報酬率" desc="以「預估收入 − 含買入手續費成本」計算，與券商顯示的損益一致。" />
             <Item label="排序" desc="滑鼠移到持股列，左側出現拖拉把手（⠿），按住拖曳可調整順序，放開後自動儲存。" />
-            <Item label="新增持股" desc="點擊右上角「新增持股」，在股票代號欄輸入後會出現搜尋下拉選單，選取後自動帶入名稱與幣別。也可手動填入代號、股數、平均成本。" />
+            <Item label="新增持股" desc="點擊右上角「新增持股」，在股票代號欄輸入後會出現搜尋下拉選單，選取後自動帶入名稱與幣別。也可手動填入代號、股數、平均成本。搜尋範圍由設定頁的「股票搜尋市場」決定。" />
             <Item label="編輯 / 刪除 / 查詢" desc="滑鼠移到持股列上，右側會出現放大鏡（查詢）、鉛筆（編輯）、垃圾桶（刪除）三個按鈕。" />
             <Item label="股價更新" desc="頁面載入後自動從 Yahoo Finance 取得即時報價，之後每 5 分鐘自動更新一次。" />
           </Section>
 
           <Section icon={PieChart} title="總資產配置">
-            <Item label="用途" desc="顯示目前組合的資產分布圓餅圖（台股 / 美股分開顯示），以及各項財務指標摘要卡片。" />
-            <Item label="資產配置圖" desc="左側顯示台股（.TW / .TWO）持股分布，右側顯示美股持股分布，各自列出個股佔總資產的比例與該類別小計。" />
+            <Item label="用途" desc="顯示目前組合的資產分布圓餅圖與各項財務指標摘要卡片。" />
+            <Item label="資產配置圖" desc="持股依市場分為台股（.TW / .TWO）、A股（.SS / .SZ）、美股三組圓餅圖，各自列出個股佔該類別的比例與小計。" />
             <Item label="流動預備金" desc="點擊該卡片可直接編輯預留的現金金額，會計入「總資產」但不會影響持股損益計算。Enter 確認，Esc 取消。" />
-            <Item label="年配息卡片" desc="主要數字為稅後配息，下方小字為稅前，稅率在「退休規劃參考 → 設定」中調整。" />
+            <Item label="每月支出卡片" desc="點擊卡片可直接內嵌編輯每月生活費目標（操作方式同流動預備金：Enter 確認、Esc 取消）；編輯時若有貸款還款，下方會同步顯示月還款金額供參考。卡片主值顯示生活費 + 所有貸款月還款的合計，數字為橘色。每月生活費也可在「退休規劃參考 → 設定」中修改。" />
+            <Item label="年配息卡片" desc="主要數字為稅後配息（綠色），下方小字為稅前，稅率在「退休規劃參考 → 設定」中調整。" />
             <Item label="配息區塊" desc="對每檔持股輸入預期年化殖利率（%），輸入後 0.6 秒自動儲存，也可按 Tab 移到下一欄立即存入。配息以市值計算，非預估收入。" />
-            <Item label="退休規劃參考" desc="點擊右上角「設定」可設定稅率、匯率、每月生活費目標與手續費率，系統計算 FIRE 達成率（稅後月配息 ÷ 每月生活費）。" />
-            <Item label="貸款" desc="點擊右上角「編輯」可輸入貸款金額、年利率與還款期數（支援月 / 年切換），儲存後顯示在剩餘貸款卡片。" />
+            <Item label="退休規劃參考" desc="點擊右上角「設定」可設定配息稅率、每月生活費目標與手續費率，系統計算 FIRE 達成率（稅後月配息 ÷ 每月生活費）。每月生活費也可直接點擊上方「每月支出」卡片快速修改。" />
+            <Item label="貸款（多筆）" desc="點擊「新增貸款」可逐筆輸入貸款名稱、金額、年利率與還款期數（支援月 / 年切換），每筆顯示每月還款金額，多筆時底部自動加總合計。" />
           </Section>
 
           <Section icon={ChartCandlestick} title="個股查詢">
@@ -88,6 +90,8 @@ export default function GuidePage() {
             <Item label="台灣上櫃（TPEx）" desc="代號後加 .TWO，例如 6781.TWO" />
             <Item label="ETF（上市）" desc="同上市格式：00878.TW、0056.TW" />
             <Item label="美股" desc="直接填代號：AAPL、NVDA、VOO" />
+            <Item label="A股 上交所（SSE）" desc="代號後加 .SS，例如 600036.SS、600519.SS" />
+            <Item label="A股 深交所（SZSE）" desc="代號後加 .SZ，例如 000001.SZ、000977.SZ" />
           </Section>
 
           <Section icon={TrendingUp} title="殖利率與配息計算方式">
@@ -115,6 +119,7 @@ export default function GuidePage() {
           <Section icon={Settings} title="設定">
             <Item label="外觀" desc="支援淺色、深色、跟隨系統三種模式，可在設定頁切換。" />
             <Item label="AI 金鑰" desc="在設定頁輸入或移除 API Key，儲存後立即生效，無需重啟伺服器，也不需手動編輯 .env 檔案。" />
+            <Item label="股票搜尋市場" desc="設定頁下方可切換「台股 / 美股」或「陸股（A股）」模式。切換後，新增持股的搜尋下拉選單會改用對應的資料來源：台股/美股使用 Yahoo Finance；A股改用 Sina Finance，支援簡體中文名稱、股票代號與拼音縮寫搜尋。" />
             <Item label="手續費率" desc="在「總資產配置 → 退休規劃設定」中調整，預設 0.1425%。依券商折扣輸入實際費率即可。" />
             <Item label="股價來源" desc="使用 Yahoo Finance 免費 API，不需要 Key。App 每 5 分鐘向 Yahoo Finance 重新抓取一次；Yahoo Finance 免費方案本身的報價相對交易所可能有最多 15 分鐘延遲。" />
           </Section>

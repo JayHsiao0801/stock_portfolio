@@ -4,13 +4,16 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { ApiKeySettings } from "@/components/settings/ApiKeySettings";
+import { MarketModeToggle } from "@/components/settings/MarketModeToggle";
 import { getEnvKeyStatus } from "@/actions/envActions";
+import { getRetirementSettings } from "@/actions/portfolioActions";
 
 export default async function SettingsPage() {
-  const [claude, gemini, groq] = await Promise.all([
+  const [claude, gemini, groq, settings] = await Promise.all([
     getEnvKeyStatus("ANTHROPIC_API_KEY"),
     getEnvKeyStatus("GOOGLE_GENERATIVE_AI_API_KEY"),
     getEnvKeyStatus("GROQ_API_KEY"),
+    getRetirementSettings(),
   ]);
 
   return (
@@ -52,6 +55,14 @@ export default async function SettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-sm font-medium text-muted-foreground">股票搜尋市場</h2>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">影響新增持股時的搜尋結果</p>
+            </div>
+            <MarketModeToggle initial={settings.stockMarket} />
           </div>
         </div>
       </div>

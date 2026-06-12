@@ -15,12 +15,24 @@ model Portfolio {
   currency    String    @default("TWD")
   isDefault   Boolean   @default(false)
   plannedCash      Float     @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  holdings    Holding[]
+  loans       Loan[]
+}
+
+model Loan {
+  id               String    @id @default(cuid())
+  portfolioId      String
+  portfolio        Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  label            String    @default("")
   remainingLoan    Float     @default(0)
   loanInterestRate Float     @default(0)
   loanMonths       Int       @default(0)
   createdAt        DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  holdings    Holding[]
+  updatedAt        DateTime  @updatedAt
+
+  @@index([portfolioId])
 }
 
 model Holding {
@@ -66,5 +78,6 @@ model AppSettings {
   monthlyExpense    Float    @default(0)
   dividendTaxRate   Float    @default(10.0)
   brokerageFeeRate  Float    @default(0.1425)
+  stockMarket       String   @default("tw")
   updatedAt         DateTime @updatedAt
 }
