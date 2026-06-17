@@ -2,7 +2,7 @@
 
 import { TrendingUp, TrendingDown, DollarSign, BarChart2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/stock/calculator";
+import { formatCurrency, formatPercent, convertCurrency } from "@/lib/stock/calculator";
 import { cn } from "@/lib/utils";
 
 interface SummaryCardsProps {
@@ -10,31 +10,37 @@ interface SummaryCardsProps {
   totalCost: number;
   totalPnL: number;
   totalPnLPct: number;
+  displayCurrency?: string;
+  rates?: Record<string, number>;
 }
 
-export function SummaryCards({ totalValue, totalCost, totalPnL, totalPnLPct }: SummaryCardsProps) {
+export function SummaryCards({ totalValue, totalCost, totalPnL, totalPnLPct, displayCurrency = "TWD", rates = {} }: SummaryCardsProps) {
   const isProfit = totalPnL >= 0;
   const PnLIcon = isProfit ? TrendingUp : TrendingDown;
+  const fmt = (amount: number) => {
+    const converted = convertCurrency(amount, "TWD", displayCurrency, rates);
+    return "$" + new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 0 }).format(Math.round(converted));
+  };
 
   type CardItem = { label: string; value: string; icon: React.ElementType; iconClass: string; iconBg: string; valueClass?: string; sub?: string };
   const cards: CardItem[] = [
     {
       label: "總市值",
-      value: formatCurrency(totalValue),
+      value: fmt(totalValue),
       icon: DollarSign,
       iconClass: "text-primary",
       iconBg: "bg-primary/10",
     },
     {
       label: "總成本",
-      value: formatCurrency(totalCost),
+      value: fmt(totalCost),
       icon: BarChart2,
       iconClass: "text-muted-foreground",
       iconBg: "bg-muted",
     },
     {
       label: "未實現損益",
-      value: formatCurrency(totalPnL),
+      value: fmt(totalPnL),
       icon: PnLIcon,
       iconClass: isProfit ? "text-profit" : "text-loss",
       iconBg: isProfit ? "bg-[oklch(0.73_0.19_145/0.12)]" : "bg-[oklch(0.65_0.24_25/0.12)]",

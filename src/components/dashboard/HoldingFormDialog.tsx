@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createHolding, updateHolding } from "@/actions/holdingActions";
 import { cn } from "@/lib/utils";
+import { DISPLAY_CURRENCIES } from "@/lib/stock/calculator";
 import type { Holding } from "@/generated/prisma/client";
 
 const schema = z.object({
@@ -193,12 +194,24 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">幣別</label>
-              <Input
-                value={currencyValue}
-                onChange={(e) => setValue("currency", e.target.value)}
-                className="h-8 text-sm"
-                placeholder="TWD"
-              />
+              <div className="flex items-center rounded-md border border-input overflow-hidden text-[11px] h-8">
+                {DISPLAY_CURRENCIES.map((c, i) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setValue("currency", c.code)}
+                    className={cn(
+                      "flex-1 h-full font-medium transition-colors",
+                      i > 0 && "border-l border-input",
+                      currencyValue === c.code
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">產業（選填）</label>

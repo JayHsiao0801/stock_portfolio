@@ -2,9 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Search, GripVertical } from "lucide-react";
-import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Search, GripVertical, Settings } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -40,6 +38,8 @@ interface HoldingsTableProps {
   priceLoading?: boolean;
   colorMap?: Record<string, string>;
   brokerageFeeRate?: number;
+  displayCurrency: string;
+  rates: Record<string, number>;
 }
 
 interface RowProps {
@@ -95,8 +95,10 @@ function SortableRow({
   const isProfit = pnl >= 0;
 
   const nativeCurrency = h.currency || "TWD";
-  const fmt = (amount: number) =>
-    formatCurrency(convertCurrency(amount, nativeCurrency, displayCurrency, rates), displayCurrency);
+  const fmt = (amount: number) => {
+    const converted = convertCurrency(amount, nativeCurrency, displayCurrency, rates);
+    return "$" + new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 0 }).format(Math.round(converted));
+  };
 
   return (
     <TableRow
@@ -133,6 +135,11 @@ function SortableRow({
                 {h.sector}
               </Badge>
             )}
+            {h.notes && (
+              <div className="text-[10px] text-muted-foreground/60 mt-0.5 max-w-[160px] truncate">
+                {h.notes}
+              </div>
+            )}
           </div>
         </div>
       </TableCell>
@@ -140,7 +147,7 @@ function SortableRow({
         {h.shares.toLocaleString()}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3 text-muted-foreground">
-        {h.avgCost.toFixed(2)}
+        {fmt(Number(h.avgCost))}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3 text-muted-foreground">
         {fmt(Number(h.shares) * Number(h.avgCost))}
@@ -149,7 +156,7 @@ function SortableRow({
         {priceLoading ? (
           <Skeleton className="h-3 w-14 ml-auto rounded" />
         ) : (
-          currentPrice.toFixed(2)
+          fmt(currentPrice)
         )}
       </TableCell>
       <TableCell className="text-right tabular-nums py-3">
@@ -187,19 +194,12 @@ function SortableRow({
   );
 }
 
-export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, colorMap, brokerageFeeRate = 0.1425 }: HoldingsTableProps) {
+export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, colorMap, brokerageFeeRate = 0.1425, displayCurrency, rates }: HoldingsTableProps) {
   const router = useRouter();
   const [editTarget, setEditTarget] = useState<Holding | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [orderedHoldings, setOrderedHoldings] = useState(holdings);
-  const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
-
-  const { data: rates = {} } = useSWR<Record<string, number>>(
-    "/api/exchange-rates",
-    (url: string) => fetch(url).then((r) => r.json()),
-    { refreshInterval: 60 * 60 * 1000, revalidateOnFocus: false }
-  );
 
   useEffect(() => {
     setOrderedHoldings(holdings);
@@ -232,24 +232,6 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-sm font-semibold tracking-tight">持股明細</h2>
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-md border border-border/60 overflow-hidden text-[11px]">
-            {DISPLAY_CURRENCIES.map((c, i) => (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => setDisplayCurrency(c.code)}
-                className={cn(
-                  "px-2 py-1 font-medium transition-colors",
-                  i > 0 && "border-l border-border/60",
-                  displayCurrency === c.code
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
           <Button
             size="sm"
             variant="outline"
@@ -258,6 +240,16 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
           >
             <Plus className="h-3 w-3" />
             新增持股
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 text-muted-foreground"
+            title="切換台股 / 陸股搜尋市場"
+            onClick={() => router.push("/settings#market-mode")}
+          >
+            <Settings className="h-3 w-3" />
+            股市切換
           </Button>
         </div>
       </div>

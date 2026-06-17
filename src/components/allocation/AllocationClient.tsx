@@ -5,7 +5,7 @@ import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
 import useSWR from "swr";
 import {
   TrendingUp, DollarSign, Layers,
-  Settings, Calculator, Pencil, Check, X, CreditCard, Plus, Trash2,
+  Settings, Calculator, Pencil, Check, X, CreditCard, Plus, Trash2, RefreshCw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { updatePortfolioPlannedCash, createLoan, updateLoan, deleteLoan, updateH
 import type { Holding, Loan, Portfolio } from "@/generated/prisma/client";
 
 type PortfolioWithHoldings = Portfolio & { holdings: Holding[]; loans: Loan[] };
-type RetirementSettings = { exchangeRate: number; monthlyExpense: number; dividendTaxRate: number; brokerageFeeRate: number };
+type RetirementSettings = { monthlyExpense: number; dividendTaxRate: number; brokerageFeeRate: number };
 
 interface Props {
   portfolio: PortfolioWithHoldings | null;
@@ -212,6 +212,40 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
     });
   };
 
+  const [fetchingYields, setFetchingYields] = useState(false);
+
+  const autoFetchYields = async () => {
+    setFetchingYields(true);
+    try {
+      const results = await Promise.allSettled(
+        enrichedHoldings.map((h) =>
+          fetch(`/api/stock-info?ticker=${encodeURIComponent(h.ticker)}`)
+            .then((r) => r.json())
+            .then((data: { dividendYield?: number | null }) => ({ id: h.id, dividendYield: data.dividendYield ?? null }))
+        )
+      );
+      const updates: Array<{ id: string; pct: number }> = [];
+      results.forEach((r) => {
+        if (r.status === "fulfilled" && r.value.dividendYield !== null) {
+          const pct = r.value.dividendYield > 1
+            ? r.value.dividendYield
+            : r.value.dividendYield * 100;
+          updates.push({ id: r.value.id, pct: Math.round(pct * 100) / 100 });
+        }
+      });
+      if (updates.length > 0) {
+        setYieldMap((prev) => {
+          const next = { ...prev };
+          updates.forEach(({ id, pct }) => { next[id] = pct.toString(); });
+          return next;
+        });
+        await Promise.all(updates.map(({ id, pct }) => updateHoldingDividendYield(id, pct)));
+      }
+    } finally {
+      setFetchingYields(false);
+    }
+  };
+
   const yieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const handleYieldChange = (holdingId: string, value: string) => {
@@ -242,6 +276,16 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
     ? (monthlyAfterTax / localMonthlyExpense) * 100
     : null;
 
+  const requiredGrossAnnual = localMonthlyExpense > 0
+    ? (localMonthlyExpense * 12) / (1 - retirementSettings.dividendTaxRate / 100)
+    : 0;
+  const requiredYield = (localMonthlyExpense > 0 && totalValue > 0)
+    ? (requiredGrossAnnual / totalValue) * 100
+    : null;
+  const dividendGap = localMonthlyExpense > 0
+    ? Math.max(0, requiredGrossAnnual - totalAnnualDividend)
+    : null;
+
   const calcMonthlyPayment = (remainingLoan: number, loanInterestRate: number, loanMonths: number) => {
     if (remainingLoan <= 0 || loanMonths <= 0) return 0;
     const r = loanInterestRate / 100 / 12;
@@ -260,8 +304,10 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
   const formPeriodMonths = calcLoanMonths(loanForm.period, loanForm.periodUnit);
 
   // 所有金額一律以 TWD 為基準再換算至 displayCurrency
-  const fmt = (amount: number) =>
-    formatCurrency(convertCurrency(amount, "TWD", displayCurrency, rates), displayCurrency);
+  const fmt = (amount: number) => {
+    const converted = convertCurrency(amount, "TWD", displayCurrency, rates);
+    return "$" + new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 0 }).format(Math.round(converted));
+  };
 
   return (
     <div className="space-y-5 pb-6">
@@ -502,86 +548,130 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
         </div>
         <Card className="border-border/60">
           <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">年配息</p>
-                <p className="text-base font-bold tabular-nums">
-                  {totalAnnualDividend > 0
-                    ? fmt(totalAnnualDividend)
-                    : <span className="text-muted-foreground text-sm font-normal">請在下方輸入殖利率</span>}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">
-                  稅後年收入 <span className="opacity-60">(-{retirementSettings.dividendTaxRate}%)</span>
-                </p>
-                <p className="text-base font-bold tabular-nums text-profit">
-                  {afterTaxDividend > 0 ? fmt(afterTaxDividend) : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">稅後月收入</p>
-                <p className="text-base font-bold tabular-nums">
-                  {monthlyAfterTax > 0 ? fmt(monthlyAfterTax) : "—"}
-                </p>
-              </div>
-              <div className="md:col-span-1">
-                <p className="text-[10px] text-muted-foreground mb-1.5">稅後年收入換算</p>
-                {afterTaxDividend > 0 && Object.keys(rates).length > 0 ? (
-                  <div className="space-y-1">
-                    {DISPLAY_CURRENCIES.filter((c) => c.code !== "TWD").map((c) => {
-                      const rate = rates[c.code];
-                      if (!rate) return null;
-                      const converted = afterTaxDividend * rate;
-                      const twdPerUnit = (1 / rate).toFixed(1);
-                      return (
-                        <div key={c.code} className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] text-muted-foreground font-mono">{c.code} <span className="opacity-50">≈1:{twdPerUnit}</span></span>
-                          <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                            {formatCurrency(converted, c.code)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-base font-bold tabular-nums text-muted-foreground">—</p>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-border/30 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium">FIRE 達成率</span>
-                  {monthlyExpense === 0 && (
-                    <span className="text-[10px] text-muted-foreground">（請點擊上方卡片填入每月生活費）</span>
+            <div className="flex gap-5">
+              {/* 左側：指標欄 + FIRE */}
+              <div className="flex-1 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-4">
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">年配息</p>
+                  <p className="text-base font-bold tabular-nums">
+                    {totalAnnualDividend > 0
+                      ? fmt(totalAnnualDividend)
+                      : <span className="text-muted-foreground text-sm font-normal">請在下方輸入殖利率</span>}
+                  </p>
+                  {totalAnnualDividend > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                      殖利率 {estimatedYield.toFixed(2)}%
+                    </p>
                   )}
                 </div>
-                {fireRatio !== null && (
-                  <span className={cn("text-sm font-bold tabular-nums", fireRatio >= 100 ? "text-profit" : "text-primary")}>
-                    {fireRatio.toFixed(1)}%
-                  </span>
-                )}
-              </div>
-              {fireRatio !== null && (
-                <>
-                  <div className="h-2 rounded-full overflow-hidden bg-muted">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${Math.min(fireRatio, 100)}%`,
-                        background: fireRatio >= 100 ? "oklch(0.73 0.19 145)" : "oklch(0.62 0.21 260)",
-                      }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    每月生活費目標 {fmt(monthlyExpense)}，
-                    月收入 {fmt(monthlyAfterTax)}
-                    {fireRatio >= 100 && " · 已達 FIRE 目標 🎉"}
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    稅後年收入 <span className="opacity-60">(-{retirementSettings.dividendTaxRate}%)</span>
                   </p>
-                </>
-              )}
+                  <p className="text-base font-bold tabular-nums text-profit">
+                    {afterTaxDividend > 0 ? fmt(afterTaxDividend) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">稅後月收入</p>
+                  <p className="text-base font-bold tabular-nums">
+                    {monthlyAfterTax > 0 ? fmt(monthlyAfterTax) : "—"}
+                  </p>
+                  {monthlyExpense > 0 && monthlyAfterTax > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                      目標 {fmt(monthlyExpense)}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">需達殖利率</p>
+                  <p className="text-base font-bold tabular-nums">
+                    {requiredYield !== null
+                      ? <span className={cn(estimatedYield >= requiredYield ? "text-profit" : "")}>{requiredYield.toFixed(2)}%</span>
+                      : <span className="text-muted-foreground text-sm font-normal">—</span>}
+                  </p>
+                  {requiredYield !== null && estimatedYield > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                      目前 {estimatedYield.toFixed(2)}%
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">配息缺口</p>
+                  <p className={cn("text-base font-bold tabular-nums", dividendGap === 0 ? "text-profit" : "")}>
+                    {dividendGap !== null
+                      ? (dividendGap === 0 ? "已達標" : fmt(dividendGap))
+                      : <span className="text-muted-foreground text-sm font-normal">—</span>}
+                  </p>
+                  {dividendGap !== null && dividendGap > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">年配息需補足</p>
+                  )}
+                </div>
+              </div>
+                <div className="pt-3 border-t border-border/20 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium">FIRE 達成率</span>
+                      {monthlyExpense === 0 && (
+                        <span className="text-[10px] text-muted-foreground">（請點擊上方卡片填入每月生活費）</span>
+                      )}
+                    </div>
+                    {fireRatio !== null && (
+                      <span className={cn("text-sm font-bold tabular-nums", fireRatio >= 100 ? "text-profit" : "text-primary")}>
+                        {fireRatio.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  {fireRatio !== null && (
+                    <>
+                      <div className="h-2 rounded-full overflow-hidden bg-muted">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${Math.min(fireRatio, 100)}%`,
+                            background: fireRatio >= 100 ? "oklch(0.73 0.19 145)" : "oklch(0.62 0.21 260)",
+                          }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        每月生活費目標 {fmt(monthlyExpense)}，月收入 {fmt(monthlyAfterTax)}
+                        {fireRatio >= 100 && " · 已達 FIRE 目標 🎉"}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              {/* 右側：稅換算匯率 */}
+              <div className="shrink-0 border-l border-border/30 pl-4 hidden md:flex md:flex-col md:gap-4 min-w-[148px]">
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1.5">稅換算匯率</p>
+                  {Object.keys(rates).length > 0 ? (
+                    <div className="space-y-1">
+                      {DISPLAY_CURRENCIES.map((c) => {
+                        if (c.code === displayCurrency) {
+                          return (
+                            <div key={c.code}>
+                              <span className="text-[10px] text-muted-foreground font-mono">{c.code} <span className="opacity-60 tabular-nums">1:1</span></span>
+                            </div>
+                          );
+                        }
+                        const fromTWD = displayCurrency === "TWD" ? 1 : 1 / (rates[displayCurrency] ?? 1);
+                        const toAmount = c.code === "TWD" ? 1 : (rates[c.code] ?? 1);
+                        const r = fromTWD * toAmount;
+                        const rStr = r >= 10 ? r.toFixed(1) : r >= 0.1 ? r.toFixed(2) : r.toFixed(3);
+                        return (
+                          <div key={c.code}>
+                            <span className="text-[10px] text-muted-foreground font-mono">{c.code} <span className="opacity-60 tabular-nums">≈1:{rStr}</span></span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">—</p>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -596,13 +686,23 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
               輸入各股預期年化殖利率 %，結果自動儲存
             </span>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 gap-1 text-xs text-muted-foreground hover:text-foreground px-2"
+            onClick={autoFetchYields}
+            disabled={fetchingYields}
+          >
+            <RefreshCw className={cn("h-3 w-3", fetchingYields && "animate-spin")} />
+            {fetchingYields ? "取得中…" : "自動取得"}
+          </Button>
         </div>
 
         <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/40">
-                {["股票", `市值(${displayCurrency})`, "年化殖利率 %", "年配息", "月配息"].map((col, i) => (
+                {["股票", "市值", "年化殖利率 %", "年配息", "月配息"].map((col, i) => (
                   <th
                     key={`${col}-${i}`}
                     className={cn(

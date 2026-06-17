@@ -5,6 +5,7 @@ import { Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { ApiKeySettings } from "@/components/settings/ApiKeySettings";
 import { MarketModeToggle } from "@/components/settings/MarketModeToggle";
+import { ScrollToHash } from "@/components/settings/ScrollToHash";
 import { getEnvKeyStatus } from "@/actions/envActions";
 import { getRetirementSettings } from "@/actions/portfolioActions";
 
@@ -18,6 +19,7 @@ export default async function SettingsPage() {
 
   return (
     <AppShell>
+      <ScrollToHash />
       <div className="h-full overflow-y-auto p-4">
         <div className="max-w-lg space-y-6">
           <div className="flex items-center gap-3">
@@ -57,7 +59,7 @@ export default async function SettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div id="market-mode" className="space-y-3">
             <div>
               <h2 className="text-sm font-medium text-muted-foreground">股票搜尋市場</h2>
               <p className="text-xs text-muted-foreground/70 mt-0.5">影響新增持股時的搜尋結果</p>

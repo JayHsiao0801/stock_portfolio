@@ -132,10 +132,10 @@ function MiniDonut({
                 innerRadius={innerR}
                 outerRadius={outerR}
                 paddingAngle={0}
-                cornerRadius={5}
+                cornerRadius={data.length === 1 ? 0 : 5}
                 dataKey="value"
-                stroke={strokeColor}
-                strokeWidth={isDark ? 3 : 1.5}
+                stroke={data.length === 1 ? "none" : strokeColor}
+                strokeWidth={data.length === 1 ? 0 : isDark ? 3 : 1.5}
                 startAngle={90}
                 endAngle={-270}
                 animationBegin={0}

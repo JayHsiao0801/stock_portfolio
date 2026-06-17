@@ -7,7 +7,9 @@ import { useAppStore } from "@/store/appStore";
 import { SummaryCards } from "./SummaryCards";
 import { AllocationPieChart, COLORS } from "./AllocationPieChart";
 import { HoldingsTable } from "./HoldingsTable";
-import { calcPortfolioSummary } from "@/lib/stock/calculator";
+import { calcPortfolioSummary, DISPLAY_CURRENCIES } from "@/lib/stock/calculator";
+import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
+import { cn } from "@/lib/utils";
 import type { Holding, Portfolio } from "@/generated/prisma/client";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -20,12 +22,18 @@ interface Props {
 
 export function DashboardClient({ portfolio, availableProviders, brokerageFeeRate }: Props) {
   const { setPortfolioContext } = useAppStore();
+  const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
 
   const tickers = portfolio?.holdings.map((h) => h.ticker) ?? [];
   const { data: priceMap = {}, isLoading: priceLoading } = useSWR<Record<string, number>>(
     tickers.length > 0 ? `/api/stock-price/batch?tickers=${tickers.join(",")}` : null,
     fetcher,
     { refreshInterval: 5 * 60 * 1000 }
+  );
+  const { data: rates = {} } = useSWR<Record<string, number>>(
+    "/api/exchange-rates",
+    fetcher,
+    { refreshInterval: 60 * 60 * 1000, revalidateOnFocus: false }
   );
 
   const holdings = portfolio?.holdings ?? [];
@@ -81,12 +89,32 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
             {portfolio.name} · {holdings.length} 檔持股
           </p>
         </div>
+        <div className="ml-auto flex items-center rounded-md border border-border/60 overflow-hidden text-[11px]">
+          {DISPLAY_CURRENCIES.map((c, i) => (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => setDisplayCurrency(c.code)}
+              className={cn(
+                "px-2 py-1 font-medium transition-colors",
+                i > 0 && "border-l border-border/60",
+                displayCurrency === c.code
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
       <SummaryCards
         totalValue={summary.totalValue}
         totalCost={summary.totalCost}
         totalPnL={summary.totalPnL}
         totalPnLPct={summary.totalPnLPct}
+        displayCurrency={displayCurrency}
+        rates={rates}
       />
       <AllocationPieChart holdings={holdings} priceMap={priceMap} />
       <HoldingsTable
@@ -96,6 +124,8 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
         priceLoading={priceLoading}
         colorMap={colorMap}
         brokerageFeeRate={brokerageFeeRate}
+        displayCurrency={displayCurrency}
+        rates={rates}
       />
     </div>
   );

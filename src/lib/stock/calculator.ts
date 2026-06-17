@@ -37,12 +37,14 @@ export function calcPortfolioSummary(
 }
 
 export function formatCurrency(value: number, currency = "TWD"): string {
-  return new Intl.NumberFormat("zh-TW", {
+  const formatted = new Intl.NumberFormat("zh-TW", {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value).replace(/\s/g, "");
+  if (currency === "TWD") return formatted.replace(/^\$/, "NT$");
+  return formatted;
 }
 
 export function formatPercent(value: number): string {
