@@ -1,34 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import YahooFinance from "yahoo-finance2";
 import { prisma } from "@/lib/prisma";
+import { getCached } from "@/lib/cache";
 
 const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 // 台股中文名稱快取（TWSE + TPEx 合併）
-let twNameCache: Map<string, string> | null = null;
-let twNameCacheTime = 0;
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 
 async function getTwNames(): Promise<Map<string, string>> {
-  if (twNameCache && Date.now() - twNameCacheTime < CACHE_TTL) return twNameCache;
-  const map = new Map<string, string>();
-  try {
-    const [twseRes, tpexRes] = await Promise.all([
-      fetch("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"),
-      fetch("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes"),
-    ]);
-    if (twseRes.ok) {
-      const data: { Code: string; Name: string }[] = await twseRes.json();
-      for (const s of data) map.set(s.Code, s.Name);
-    }
-    if (tpexRes.ok) {
-      const data: { SecuritiesCompanyCode: string; CompanyName: string }[] = await tpexRes.json();
-      for (const s of data) map.set(s.SecuritiesCompanyCode, s.CompanyName);
-    }
-  } catch { /* 失敗時沿用快取或空 Map */ }
-  twNameCache = map;
-  twNameCacheTime = Date.now();
-  return map;
+  return getCached("tw-stock-names", CACHE_TTL, async () => {
+    const map = new Map<string, string>();
+    try {
+      const [twseRes, tpexRes] = await Promise.all([
+        fetch("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"),
+        fetch("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes"),
+      ]);
+      if (twseRes.ok) {
+        const data: { Code: string; Name: string }[] = await twseRes.json();
+        for (const s of data) map.set(s.Code, s.Name);
+      }
+      if (tpexRes.ok) {
+        const data: { SecuritiesCompanyCode: string; CompanyName: string }[] = await tpexRes.json();
+        for (const s of data) map.set(s.SecuritiesCompanyCode, s.CompanyName);
+      }
+    } catch { /* 失敗時沿用快取或空 Map */ }
+    return map;
+  });
 }
 
 function inferCurrency(symbol: string, exchange: string): string {

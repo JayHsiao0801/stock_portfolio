@@ -43,7 +43,7 @@ export function SummaryCards({ totalValue, totalCost, totalPnL, totalPnLPct, dis
       value: fmt(totalPnL),
       icon: PnLIcon,
       iconClass: isProfit ? "text-profit" : "text-loss",
-      iconBg: isProfit ? "bg-[oklch(0.73_0.19_145/0.12)]" : "bg-[oklch(0.65_0.24_25/0.12)]",
+      iconBg: isProfit ? "bg-[oklch(0.65_0.24_25/0.12)]" : "bg-[oklch(0.73_0.19_145/0.12)]",
       valueClass: isProfit ? "text-profit" : "text-loss",
     },
     {
@@ -51,7 +51,7 @@ export function SummaryCards({ totalValue, totalCost, totalPnL, totalPnLPct, dis
       value: formatPercent(totalPnLPct),
       icon: PnLIcon,
       iconClass: isProfit ? "text-profit" : "text-loss",
-      iconBg: isProfit ? "bg-[oklch(0.73_0.19_145/0.12)]" : "bg-[oklch(0.65_0.24_25/0.12)]",
+      iconBg: isProfit ? "bg-[oklch(0.65_0.24_25/0.12)]" : "bg-[oklch(0.73_0.19_145/0.12)]",
       valueClass: isProfit ? "text-profit" : "text-loss",
     },
   ];

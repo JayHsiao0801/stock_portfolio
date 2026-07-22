@@ -2,7 +2,7 @@
 
 import React from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { useTheme } from "@/components/layout/ThemeProvider";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Holding } from "@/generated/prisma/client";
 

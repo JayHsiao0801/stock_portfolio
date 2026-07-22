@@ -40,7 +40,7 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
               (href === "/" ? pathname === href : pathname === href || pathname.startsWith(href + "/"))
-                ? "bg-primary/[0.12] text-primary font-medium"
+                ? "bg-primary/[0.12] text-primary font-medium dark:metal-shine"
                 : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
             )}
           >
@@ -56,7 +56,7 @@ export function Sidebar() {
           className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
             pathname === "/guide"
-              ? "bg-primary/[0.12] text-primary font-medium"
+              ? "bg-primary/[0.12] text-primary font-medium dark:metal-shine"
               : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
           )}
         >
@@ -68,7 +68,7 @@ export function Sidebar() {
           className={cn(
             "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-all duration-150",
             isChatOpen
-              ? "bg-primary/[0.12] text-primary font-medium"
+              ? "bg-primary/[0.12] text-primary font-medium dark:metal-shine"
               : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
           )}
         >

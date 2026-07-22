@@ -1,24 +1,19 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import "./globals.css";
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { ThemeProvider } from "next-themes";
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_APP_NAME ?? "Stock Portfolio",
   description: "個人股票資產管理",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const theme = cookieStore.get("theme")?.value ?? "dark";
-  const isDark = theme === "dark" || theme === "system";
-
   return (
-    <html lang="zh-TW" className={`h-full antialiased${isDark ? " dark" : ""}`}>
+    <html lang="zh-TW" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        <ThemeProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}
         </ThemeProvider>
       </body>
