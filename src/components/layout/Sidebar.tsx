@@ -76,7 +76,7 @@ export function Sidebar() {
           AI 助理
         </button>
         <div className="px-2 pt-1">
-          <span className="text-[11px] text-muted-foreground/60 tabular-nums">v1.0.0</span>
+          <span className="text-[11px] text-muted-foreground/60 tabular-nums">v1.4.1</span>
         </div>
       </div>
     </aside>
