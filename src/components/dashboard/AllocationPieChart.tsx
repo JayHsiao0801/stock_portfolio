@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,7 +189,9 @@ function MiniDonut({
 
 export function AllocationPieChart({ holdings, priceMap }: Props) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
 
   const textPrimary = isDark ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.82)";
   const textSecondary = isDark ? "rgba(255,255,255,0.50)" : "rgba(0,0,0,0.45)";
