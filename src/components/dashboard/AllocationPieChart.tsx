@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import React, { useSyncExternalStore } from "react";
+import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useTheme } from "next-themes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { convertCurrency } from "@/lib/stock/calculator";
 import type { Holding } from "@/generated/prisma/client";
 
 export const COLORS = [
@@ -30,6 +31,7 @@ const fmt = new Intl.NumberFormat("zh-TW", {
 interface Props {
   holdings: Holding[];
   priceMap: Record<string, number>;
+  rates: Record<string, number>;
 }
 
 interface DataPoint {
@@ -72,7 +74,6 @@ function CustomTooltip({
 function MiniDonut({
   data,
   colors,
-  total,
   label,
   isDark,
   shadow,
@@ -85,7 +86,6 @@ function MiniDonut({
 }: {
   data: DataPoint[];
   colors: string[];
-  total: number;
   label: string;
   isDark: boolean;
   shadow: string;
@@ -115,8 +115,7 @@ function MiniDonut({
       {/* 圓環 */}
       <div className="relative shrink-0" style={{ height: donutSize, width: donutSize }}>
         <div className="absolute inset-0" style={{ filter: shadow }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+          <PieChart width={donutSize} height={donutSize}>
               <defs>
                 {colors.map((color, i) => (
                   <linearGradient key={i} id={`pie-${label}-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
@@ -146,8 +145,7 @@ function MiniDonut({
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip isDark={isDark} />} />
-            </PieChart>
-          </ResponsiveContainer>
+          </PieChart>
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
           <span className="tabular-nums font-bold leading-none" style={{ fontSize: countFontSize, color: textPrimary }}>
@@ -187,10 +185,11 @@ function MiniDonut({
   );
 }
 
-export function AllocationPieChart({ holdings, priceMap }: Props) {
+const subscribeToHydration = () => () => {};
+
+export function AllocationPieChart({ holdings, priceMap, rates }: Props) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const isDark = mounted && resolvedTheme === "dark";
 
   const textPrimary = isDark ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.82)";
@@ -206,7 +205,12 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
     .map((h) => ({
       name: h.name,
       ticker: h.ticker,
-      value: Number(h.shares) * (priceMap[h.ticker] ?? Number(h.avgCost)),
+      value: convertCurrency(
+        Number(h.shares) * (priceMap[h.ticker] ?? Number(h.avgCost)),
+        h.currency || "TWD",
+        "TWD",
+        rates
+      ),
     }))
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value);
@@ -220,7 +224,7 @@ export function AllocationPieChart({ holdings, priceMap }: Props) {
   );
   const total = allData.reduce((s, d) => s + d.value, 0);
 
-  const sharedProps = { total, isDark, shadow, strokeColor, textPrimary, textMuted, textSecondary, dividerColor };
+  const sharedProps = { isDark, shadow, strokeColor, textPrimary, textMuted, textSecondary, dividerColor };
   const groups = [
     { data: twData, colors: TW_COLORS, label: "台股" },
     { data: cnData, colors: CN_COLORS, label: "A股" },

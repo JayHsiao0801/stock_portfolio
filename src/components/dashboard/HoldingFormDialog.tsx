@@ -2,7 +2,7 @@
 
 import { useTransition, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { z } from "zod/v4";
 import { Loader2 } from "lucide-react";
@@ -50,9 +50,8 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
   const [showDropdown, setShowDropdown] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const skipNextSearch = useRef(false);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const { control, register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: standardSchemaResolver(schema),
     defaultValues: { currency: "TWD" },
     values: holding
@@ -68,30 +67,26 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
       : undefined,
   });
 
-  const tickerValue = watch("ticker") ?? "";
-  const currencyValue = watch("currency") ?? "TWD";
+  const currencyValue = useWatch({ control, name: "currency" }) ?? "TWD";
+  const tickerField = register("ticker");
 
-  useEffect(() => {
-    if (open && !holding) {
-      reset({ currency: "TWD", ticker: "", name: "", sector: "", notes: "" });
-      setSuggestions([]);
-      setShowDropdown(false);
-    }
-  }, [open, holding, reset]);
-
-  useEffect(() => {
-    if (holding) return;
-    if (skipNextSearch.current) { skipNextSearch.current = false; return; }
+  useEffect(() => () => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!tickerValue || tickerValue.length < 1) {
+  }, []);
+
+  const handleTickerInput = (value: string) => {
+    if (holding) return;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!value) {
       setSuggestions([]);
       setShowDropdown(false);
+      setSearching(false);
       return;
     }
     setSearching(true);
     searchTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/stock-search?q=${encodeURIComponent(tickerValue)}`);
+        const res = await fetch(`/api/stock-search?q=${encodeURIComponent(value)}`);
         const data: SearchResult[] = await res.json();
         setSuggestions(data);
         setShowDropdown(data.length > 0);
@@ -101,17 +96,26 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
         setSearching(false);
       }
     }, 350);
-    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
-  }, [tickerValue, holding]);
+  };
 
   const handleSelect = (result: SearchResult) => {
-    skipNextSearch.current = true;
     setValue("ticker", result.symbol, { shouldValidate: true });
     setValue("name", result.name, { shouldValidate: true });
     setValue("currency", result.currency);
     if (result.sector) setValue("sector", result.sector);
     setShowDropdown(false);
     setSuggestions([]);
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      reset({ currency: "TWD", ticker: "", name: "", sector: "", notes: "" });
+      setSuggestions([]);
+      setShowDropdown(false);
+      setSearching(false);
+    }
+    onOpenChange(nextOpen);
   };
 
   const onSubmit = (data: FormValues) => {
@@ -128,7 +132,7 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setSuggestions([]); setShowDropdown(false); } }}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-sm">{holding ? "編輯持股" : "新增持股"}</DialogTitle>
@@ -141,7 +145,11 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
               <div className="relative" ref={dropdownRef}>
                 <div className="relative">
                   <Input
-                    {...register("ticker")}
+                    {...tickerField}
+                    onChange={(event) => {
+                      tickerField.onChange(event);
+                      handleTickerInput(event.target.value);
+                    }}
                     className="h-8 text-sm pr-6"
                     autoComplete="off"
                     onFocus={() => { if (suggestions.length > 0) setShowDropdown(true); }}
@@ -225,7 +233,7 @@ export function HoldingFormDialog({ open, onOpenChange, portfolioId, holding }: 
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => handleDialogOpenChange(false)}>
               取消
             </Button>
             <Button type="submit" size="sm" disabled={isPending}>

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import YahooFinance from "yahoo-finance2";
 import { getCached } from "@/lib/cache";
-
-const yf = new YahooFinance();
+import { fetchYahooChart } from "@/lib/yahooApi";
 
 const CACHE_TTL = 60 * 1000; // 即時報價，快取 60 秒
 
@@ -14,13 +12,17 @@ export async function GET(req: NextRequest) {
 
   try {
     const data = await getCached(`stock-price:${ticker}`, CACHE_TTL, async () => {
-      const quote = await yf.quote(ticker, {}, { validateResult: false });
+      const quote = await fetchYahooChart(ticker);
+      const price = quote.meta.regularMarketPrice;
+      if (typeof price !== "number" || price <= 0) throw new Error("no price");
+      const previousClose = quote.meta.chartPreviousClose ?? price;
+      const change = price - previousClose;
       return {
         ticker,
-        price: quote.regularMarketPrice ?? 0,
-        change: quote.regularMarketChange ?? 0,
-        changePercent: quote.regularMarketChangePercent ?? 0,
-        currency: quote.currency ?? "TWD",
+        price,
+        change,
+        changePercent: previousClose > 0 ? (change / previousClose) * 100 : 0,
+        currency: quote.meta.currency ?? "TWD",
         updatedAt: new Date().toISOString(),
       };
     });

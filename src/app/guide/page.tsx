@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick, CreditCard } from "lucide-react";
+import { BookOpen, LayoutDashboard, PieChart, Layers2, Briefcase, DollarSign, MessageSquare, Settings, TrendingUp, AlertCircle, ChartCandlestick } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {

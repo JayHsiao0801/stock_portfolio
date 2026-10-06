@@ -6,7 +6,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const dbUrl = process.env.DATABASE_URL?.startsWith("file:./")
-  ? `file:${path.resolve(process.cwd(), process.env.DATABASE_URL.slice(5))}`
+  ? `file:${path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.DATABASE_URL.slice(5))}`
   : process.env.DATABASE_URL;
 
 export const prisma =

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
 import useSWR from "swr";
 import {
@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { COLORS } from "@/components/dashboard/AllocationPieChart";
-import { calcUnrealizedPnL, calcNetProceeds, formatCurrency, formatPercent, DISPLAY_CURRENCIES, convertCurrency } from "@/lib/stock/calculator";
+import { calcUnrealizedPnL, formatPercent, DISPLAY_CURRENCIES, convertCurrency } from "@/lib/stock/calculator";
 import { cn } from "@/lib/utils";
 import { RetirementSettingsDialog } from "./RetirementSettingsDialog";
 import { updatePortfolioPlannedCash, createLoan, updateLoan, deleteLoan, updateHoldingDividendYield, updateRetirementSettings } from "@/actions/portfolioActions";
@@ -104,18 +104,17 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
   const [cashInput, setCashInput] = useState("");
   const [, startCashTransition] = useTransition();
 
-  const [localMonthlyExpense, setLocalMonthlyExpense] = useState(retirementSettings.monthlyExpense);
+  const [monthlyExpenseOverride, setMonthlyExpenseOverride] = useState<number | null>(null);
+  const localMonthlyExpense = monthlyExpenseOverride ?? retirementSettings.monthlyExpense;
   const [editingExpense, setEditingExpense] = useState(false);
   const [expenseInput, setExpenseInput] = useState("");
   const [, startExpenseTransition] = useTransition();
 
-  useEffect(() => {
-    setLocalMonthlyExpense(retirementSettings.monthlyExpense);
-  }, [retirementSettings.monthlyExpense]);
-
   const [editingLoanId, setEditingLoanId] = useState<string | null>(null);
   const [loanForm, setLoanForm] = useState({ label: "", amount: "", rate: "", period: "", periodUnit: "months" as "months" | "years" });
   const [, startLoanTransition] = useTransition();
+  const [fetchingYields, setFetchingYields] = useState(false);
+  const yieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const { data: rates = {} } = useSWR<Record<string, number>>(
@@ -142,8 +141,17 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
 
   const enrichedHoldings = portfolio.holdings.map((h, i) => {
     const price = priceMap[h.ticker] ?? h.avgCost;
-    const { value, cost, pnl, pnlPct } = calcUnrealizedPnL(Number(h.shares), Number(h.avgCost), price);
-    return { ...h, price, value, cost, pnl, pnlPct, color: COLORS[i % COLORS.length] };
+    const native = calcUnrealizedPnL(Number(h.shares), Number(h.avgCost), price);
+    const currency = h.currency || "TWD";
+    return {
+      ...h,
+      price,
+      value: convertCurrency(native.value, currency, "TWD", rates),
+      cost: convertCurrency(native.cost, currency, "TWD", rates),
+      pnl: convertCurrency(native.pnl, currency, "TWD", rates),
+      pnlPct: native.pnlPct,
+      color: COLORS[i % COLORS.length],
+    };
   }).sort((a, b) => b.value - a.value);
 
   const totalValue = enrichedHoldings.reduce((s, h) => s + h.value, 0);
@@ -161,7 +169,7 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
 
   const handleExpenseSave = () => {
     const value = parseFloat(expenseInput) || 0;
-    setLocalMonthlyExpense(value);
+    setMonthlyExpenseOverride(value);
     startExpenseTransition(async () => {
       await updateRetirementSettings({ monthlyExpense: value });
       setEditingExpense(false);
@@ -212,8 +220,6 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
     });
   };
 
-  const [fetchingYields, setFetchingYields] = useState(false);
-
   const autoFetchYields = async () => {
     setFetchingYields(true);
     try {
@@ -245,8 +251,6 @@ export function AllocationClient({ portfolio, retirementSettings }: Props) {
       setFetchingYields(false);
     }
   };
-
-  const yieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const handleYieldChange = (holdingId: string, value: string) => {
     setYieldMap((prev) => ({ ...prev, [holdingId]: value }));

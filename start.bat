@@ -2,6 +2,15 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 
+node -e "const [major, minor] = process.versions.node.split('.').map(Number); process.exit(major ^> 20 ^|^| (major === 20 ^&^& minor ^>= 19) ? 0 : 1)" >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Node.js 20.19 or newer is required. Current version:
+  node --version 2>nul
+  echo Download the latest Node.js LTS from https://nodejs.org/
+  pause
+  exit /b 1
+)
+
 if not exist ".env" (
   echo [1/4] Copying .env.example to .env...
   copy .env.example .env >nul

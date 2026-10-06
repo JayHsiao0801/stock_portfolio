@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, FolderOpen } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ interface PortfolioSwitcherProps {
 }
 
 export function PortfolioSwitcher({ portfolios }: PortfolioSwitcherProps) {
+  const router = useRouter();
   const { activePortfolioId, setActivePortfolioId } = useAppStore();
   const [isPending, startTransition] = useTransition();
 
@@ -61,7 +63,7 @@ export function PortfolioSwitcher({ portfolios }: PortfolioSwitcherProps) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => { window.location.href = "/portfolio"; }}>
+        <DropdownMenuItem onClick={() => router.push("/portfolio")}>
           管理投資組合
         </DropdownMenuItem>
       </DropdownMenuContent>

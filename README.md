@@ -36,7 +36,7 @@
 
 ## 快速啟動
 
-> **前置需求**：[Node.js 20+](https://nodejs.org/) 與 Git（[Windows](https://git-scm.com/download/win) / macOS：`xcode-select --install`）
+> **前置需求**：[Node.js 20.19+](https://nodejs.org/)（建議使用最新 LTS）與 Git（[Windows](https://git-scm.com/download/win) / macOS：`xcode-select --install`）
 
 ### 步驟
 
@@ -140,22 +140,15 @@ sudo chown -R $(whoami) ~/.npm
 
 ---
 
-### `prisma migrate deploy` 失敗，提示 Node.js 版本不符
+### 啟動時提示 Node.js 版本不符
 
-本專案使用 **Prisma 6**，相容 Node.js 20.x 任何版本。若看到：
+本專案需要 **Node.js 20.19 或更新版本**。若看到版本不符提示，請安裝最新版 Node.js LTS，關閉終端機後重新開啟，再執行啟動腳本。
 
 ```
-Prisma only supports Node.js >= 20.19+
+Requires Node >= 20.19.0
 ```
 
-代表系統安裝的是 Prisma 7（需 Node.js 20.19+）。解法：
-
-```bash
-# 明確安裝 Prisma 6
-npm install prisma@^6 @prisma/client@^6
-```
-
-或將 Node.js 升級至 20.19 以上的 LTS 版本。
+可用 `node --version` 確認目前版本；應顯示 `v20.19`、`v22` 或更高版本。
 
 ---
 
@@ -164,7 +157,7 @@ npm install prisma@^6 @prisma/client@^6
 請確認 `.env` 的 `DATABASE_URL` 保持預設格式：
 
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./prisma/dev.db"
 ```
 
 不要改成絕對路徑，程式內部已處理路徑轉換。

@@ -20,14 +20,26 @@ export function calcUnrealizedPnL(shares: number, avgCost: number, currentPrice:
 }
 
 export function calcPortfolioSummary(
-  holdings: Array<{ shares: number; avgCost: number; currentPrice?: number }>
+  holdings: Array<{
+    shares: number;
+    avgCost: number;
+    currentPrice?: number;
+    currency?: string;
+  }>,
+  rates: Record<string, number> = {}
 ) {
   let totalCost = 0;
   let totalValue = 0;
 
   for (const h of holdings) {
-    totalCost += h.shares * h.avgCost;
-    totalValue += h.shares * (h.currentPrice ?? h.avgCost);
+    const currency = h.currency || "TWD";
+    totalCost += convertCurrency(h.shares * h.avgCost, currency, "TWD", rates);
+    totalValue += convertCurrency(
+      h.shares * (h.currentPrice ?? h.avgCost),
+      currency,
+      "TWD",
+      rates
+    );
   }
 
   const totalPnL = totalValue - totalCost;

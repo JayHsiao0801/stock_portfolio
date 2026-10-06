@@ -112,7 +112,6 @@ export function CandleChart({ ticker }: Props) {
     });
 
     return () => chart.remove();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticker, range, isDark, loadData]);
 
   return (

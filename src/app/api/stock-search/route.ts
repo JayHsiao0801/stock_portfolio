@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import YahooFinance from "yahoo-finance2";
 import { prisma } from "@/lib/prisma";
 import { getCached } from "@/lib/cache";
-
-const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
+import { searchYahoo } from "@/lib/yahooApi";
 
 // 台股中文名稱快取（TWSE + TPEx 合併）
 const CACHE_TTL = 6 * 60 * 60 * 1000;
@@ -105,9 +103,8 @@ export async function GET(req: NextRequest) {
 
   // tw 模式（預設）：Yahoo Finance
   try {
-    const searchResult = await yf.search(q, {}, { validateResult: false });
-    type Quote = { symbol: string; isYahooFinance?: boolean; quoteType?: string; [key: string]: unknown };
-    const filtered = ((searchResult.quotes ?? []) as Quote[])
+    const searchResult = await searchYahoo(q);
+    const filtered = searchResult
       .filter((r) => r.isYahooFinance && ["EQUITY", "ETF", "MUTUALFUND", "FUTURE"].includes(r.quoteType ?? ""))
       .slice(0, 8);
 
@@ -115,20 +112,20 @@ export async function GET(req: NextRequest) {
     const twNames = hasTW ? await getTwNames() : new Map<string, string>();
 
     const quotes = filtered.map((r) => {
-      const exchange = (r as { exchange?: string }).exchange ?? "";
-      const exchDisp = (r as { exchDisp?: string }).exchDisp ?? "";
+      const exchange = r.exchange ?? "";
+      const exchDisp = r.exchDisp ?? "";
       const isTW = r.symbol.endsWith(".TW") || r.symbol.endsWith(".TWO");
       const code = r.symbol.replace(/\.(TW|TWO)$/, "");
       const chineseName = isTW ? twNames.get(code) : undefined;
       const fallbackName =
-        (r as { shortname?: string }).shortname ||
-        (r as { longname?: string }).longname ||
+        r.shortname ||
+        r.longname ||
         r.symbol;
       return {
         symbol: r.symbol,
         name: chineseName ?? fallbackName,
         exchange: exchDisp,
-        sector: (r as { sector?: string }).sector ?? "",
+        sector: r.sector ?? "",
         currency: inferCurrency(r.symbol, exchange),
       };
     });

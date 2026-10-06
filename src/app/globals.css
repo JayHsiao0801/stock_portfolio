@@ -132,7 +132,7 @@
 
 /* 損益顏色 — 台股慣例：紅漲綠跌。淺色模式用較深色確保對比度 */
 .text-profit {
-  color: oklch(0.50 0.22 25);
+  color: oklch(0.65 0.24 25);
 }
 .text-loss {
   color: oklch(0.48 0.18 145);

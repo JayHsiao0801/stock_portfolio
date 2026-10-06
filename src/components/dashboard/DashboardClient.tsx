@@ -1,28 +1,44 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { BarChart2 } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import { SummaryCards } from "./SummaryCards";
 import { AllocationPieChart, COLORS } from "./AllocationPieChart";
 import { HoldingsTable } from "./HoldingsTable";
-import { calcPortfolioSummary, DISPLAY_CURRENCIES } from "@/lib/stock/calculator";
+import { calcPortfolioSummary, convertCurrency, DISPLAY_CURRENCIES } from "@/lib/stock/calculator";
 import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
+import { recordDailyPnLSnapshot } from "@/actions/portfolioActions";
 import { cn } from "@/lib/utils";
 import type { Holding, Portfolio } from "@/generated/prisma/client";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const EMPTY_HOLDINGS: Holding[] = [];
 
 interface Props {
   portfolio: (Portfolio & { holdings: Holding[] }) | null;
-  availableProviders: { claude: boolean; gemini: boolean };
   brokerageFeeRate: number;
 }
 
-export function DashboardClient({ portfolio, availableProviders, brokerageFeeRate }: Props) {
+interface DailyPnLResult {
+  portfolioId: string;
+  periods: Record<PnLPeriodKey, {
+    pnl: number | null;
+    baselineDate: string | null;
+  }>;
+  quotedCount: number;
+  totalCount: number;
+  recorded: boolean;
+  error?: boolean;
+}
+
+type PnLPeriodKey = "day" | "week" | "month";
+
+export function DashboardClient({ portfolio, brokerageFeeRate }: Props) {
   const { setPortfolioContext } = useAppStore();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
+  const [dailyPnLResult, setDailyPnLResult] = useState<DailyPnLResult | null>(null);
 
   const tickers = portfolio?.holdings.map((h) => h.ticker) ?? [];
   const { data: priceMap = {}, isLoading: priceLoading } = useSWR<Record<string, number>>(
@@ -36,11 +52,19 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
     { refreshInterval: 60 * 60 * 1000, revalidateOnFocus: false }
   );
 
-  const holdings = portfolio?.holdings ?? [];
+  const holdings = portfolio?.holdings ?? EMPTY_HOLDINGS;
 
   const colorMap: Record<string, string> = {};
   [...holdings]
-    .map((h) => ({ ticker: h.ticker, value: Number(h.shares) * (priceMap[h.ticker] ?? Number(h.avgCost)) }))
+    .map((h) => ({
+      ticker: h.ticker,
+      value: convertCurrency(
+        Number(h.shares) * (priceMap[h.ticker] ?? Number(h.avgCost)),
+        h.currency || "TWD",
+        "TWD",
+        rates
+      ),
+    }))
     .filter((h) => h.value > 0)
     .sort((a, b) => b.value - a.value)
     .forEach((h, i) => { colorMap[h.ticker] = COLORS[i % COLORS.length]; });
@@ -50,7 +74,68 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
     currentPrice: priceMap[h.ticker] ?? h.avgCost,
   }));
 
-  const summary = calcPortfolioSummary(holdingsWithPrice);
+  const summary = calcPortfolioSummary(holdingsWithPrice, rates);
+  const hasRequiredRates = holdings.every((h) => {
+    const currency = h.currency || "TWD";
+    return currency === "TWD" || (typeof rates[currency] === "number" && rates[currency] > 0);
+  });
+  const snapshotPositions = useMemo(() => holdings.map((h) => {
+    const currency = h.currency || "TWD";
+    const currentPrice = priceMap[h.ticker];
+    return {
+      holdingId: h.id,
+      ticker: h.ticker,
+      shares: Number(h.shares),
+      currentPriceTWD: typeof currentPrice === "number"
+        ? convertCurrency(currentPrice, currency, "TWD", rates)
+        : null,
+      costPriceTWD: convertCurrency(Number(h.avgCost), currency, "TWD", rates),
+    };
+  }), [holdings, priceMap, rates]);
+  const currentDailyPnLResult = dailyPnLResult?.portfolioId === portfolio?.id
+    ? dailyPnLResult
+    : null;
+  const noBaselineNote: Record<PnLPeriodKey, string> = {
+    day: "尚無前次紀錄",
+    week: "尚無本週前紀錄",
+    month: "尚無本月前紀錄",
+  };
+  const makePeriodDisplay = (period: PnLPeriodKey) => {
+    const periodResult = currentDailyPnLResult?.periods[period];
+    let note = priceLoading ? "等待即時報價" : "計算中…";
+
+    if (!hasRequiredRates) {
+      note = "等待匯率資料";
+    } else if (!priceLoading) {
+      if (!currentDailyPnLResult) {
+        note = "計算中…";
+      } else if (currentDailyPnLResult.error) {
+        note = "暫時無法計算";
+      } else if (!currentDailyPnLResult.recorded) {
+        note = "本次無可用報價";
+      } else if (periodResult?.baselineDate) {
+        const [, month, day] = periodResult.baselineDate.split("-");
+        note = `較 ${Number(month)}/${Number(day)} 最近紀錄`;
+      } else {
+        note = noBaselineNote[period];
+      }
+
+      if (
+        currentDailyPnLResult &&
+        currentDailyPnLResult.totalCount > 0 &&
+        currentDailyPnLResult.quotedCount < currentDailyPnLResult.totalCount
+      ) {
+        note += ` · ${currentDailyPnLResult.quotedCount}/${currentDailyPnLResult.totalCount} 檔報價`;
+      }
+    }
+
+    return { value: periodResult?.pnl ?? null, note };
+  };
+  const periodPnL = {
+    day: makePeriodDisplay("day"),
+    week: makePeriodDisplay("week"),
+    month: makePeriodDisplay("month"),
+  };
 
   const portfolioContext = portfolio
     ? `投資組合名稱：${portfolio.name}\n` +
@@ -68,6 +153,46 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
   useEffect(() => {
     setPortfolioContext(portfolioContext);
   }, [portfolioContext, setPortfolioContext]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!portfolio || priceLoading || !hasRequiredRates) {
+      return () => { cancelled = true; };
+    }
+
+    const now = new Date();
+    const snapshotDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    recordDailyPnLSnapshot(portfolio.id, snapshotDate, snapshotPositions)
+      .then((result) => {
+        if (cancelled) return;
+        setDailyPnLResult({ portfolioId: portfolio.id, ...result });
+      })
+      .catch((error) => {
+        console.error("Failed to record daily PnL snapshot:", error);
+        if (!cancelled) {
+          setDailyPnLResult({
+            portfolioId: portfolio.id,
+            periods: {
+              day: { pnl: null, baselineDate: null },
+              week: { pnl: null, baselineDate: null },
+              month: { pnl: null, baselineDate: null },
+            },
+            quotedCount: 0,
+            totalCount: snapshotPositions.length,
+            recorded: false,
+            error: true,
+          });
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [portfolio, priceLoading, hasRequiredRates, snapshotPositions]);
 
   if (!portfolio) {
     return (
@@ -113,10 +238,11 @@ export function DashboardClient({ portfolio, availableProviders, brokerageFeeRat
         totalCost={summary.totalCost}
         totalPnL={summary.totalPnL}
         totalPnLPct={summary.totalPnLPct}
+        periodPnL={periodPnL}
         displayCurrency={displayCurrency}
         rates={rates}
       />
-      <AllocationPieChart holdings={holdings} priceMap={priceMap} />
+      <AllocationPieChart holdings={holdings} priceMap={priceMap} rates={rates} />
       <HoldingsTable
         holdings={holdings}
         portfolioId={portfolio.id}

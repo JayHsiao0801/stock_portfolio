@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Search, GripVertical, Settings } from "lucide-react";
 import {
@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatPercent, calcUnrealizedPnL, calcNetProceeds, DISPLAY_CURRENCIES, convertCurrency } from "@/lib/stock/calculator";
+import { formatPercent, calcUnrealizedPnL, calcNetProceeds, convertCurrency } from "@/lib/stock/calculator";
 import { deleteHolding, updateHoldingOrder } from "@/actions/holdingActions";
 import { HoldingFormDialog } from "./HoldingFormDialog";
 import type { Holding } from "@/generated/prisma/client";
@@ -199,11 +199,16 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
   const [editTarget, setEditTarget] = useState<Holding | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [orderedHoldings, setOrderedHoldings] = useState(holdings);
-
-  useEffect(() => {
-    setOrderedHoldings(holdings);
-  }, [holdings]);
+  const [manualOrder, setManualOrder] = useState<string[] | null>(null);
+  const orderedHoldings = useMemo(() => {
+    if (!manualOrder) return holdings;
+    const byId = new Map(holdings.map((holding) => [holding.id, holding]));
+    const ordered = manualOrder
+      .map((id) => byId.get(id))
+      .filter((holding): holding is Holding => Boolean(holding));
+    const orderedIds = new Set(ordered.map((holding) => holding.id));
+    return [...ordered, ...holdings.filter((holding) => !orderedIds.has(holding.id))];
+  }, [holdings, manualOrder]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -223,8 +228,9 @@ export function HoldingsTable({ holdings, portfolioId, priceMap, priceLoading, c
     const oldIndex = orderedHoldings.findIndex((i) => i.id === active.id);
     const newIndex = orderedHoldings.findIndex((i) => i.id === over.id);
     const newItems = arrayMove(orderedHoldings, oldIndex, newIndex);
-    setOrderedHoldings(newItems);
-    updateHoldingOrder(newItems.map((i) => i.id));
+    const orderedIds = newItems.map((i) => i.id);
+    setManualOrder(orderedIds);
+    updateHoldingOrder(orderedIds);
   };
 
   return (

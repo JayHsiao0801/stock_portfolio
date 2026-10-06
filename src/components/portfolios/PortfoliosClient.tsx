@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { DollarSign, Layers2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { COLORS } from "@/components/dashboard/AllocationPieChart";
-import { calcUnrealizedPnL, formatCurrency, formatPercent } from "@/lib/stock/calculator";
+import { calcUnrealizedPnL, convertCurrency, formatCurrency, formatPercent } from "@/lib/stock/calculator";
 import { cn } from "@/lib/utils";
 import { setActivePortfolio } from "@/actions/portfolioActions";
 import { useAppStore } from "@/store/appStore";
@@ -46,12 +46,25 @@ export function PortfoliosClient({ portfolios, retirementSettings }: Props) {
     fetcher,
     { refreshInterval: 5 * 60 * 1000 }
   );
+  const { data: rates = {} } = useSWR<Record<string, number>>(
+    "/api/exchange-rates",
+    fetcher,
+    { refreshInterval: 60 * 60 * 1000, revalidateOnFocus: false }
+  );
 
   const portfolioData = portfolios.map((p, i) => {
     const enriched = p.holdings.map((h) => {
       const price = priceMap[h.ticker] ?? h.avgCost;
-      const { value, cost, pnl, pnlPct } = calcUnrealizedPnL(Number(h.shares), Number(h.avgCost), price);
-      return { ...h, price, value, cost, pnl, pnlPct };
+      const native = calcUnrealizedPnL(Number(h.shares), Number(h.avgCost), price);
+      const currency = h.currency || "TWD";
+      return {
+        ...h,
+        price,
+        value: convertCurrency(native.value, currency, "TWD", rates),
+        cost: convertCurrency(native.cost, currency, "TWD", rates),
+        pnl: convertCurrency(native.pnl, currency, "TWD", rates),
+        pnlPct: native.pnlPct,
+      };
     });
     const totalValue = enriched.reduce((s, h) => s + h.value, 0);
     const totalCost = enriched.reduce((s, h) => s + h.cost, 0);
@@ -61,8 +74,6 @@ export function PortfoliosClient({ portfolios, retirementSettings }: Props) {
     const topHoldings = [...enriched].sort((a, b) => b.value - a.value).slice(0, 5);
     return { ...p, holdings: enriched, totalValue, totalCost, totalPnL, totalPnLPct, totalDividend, topHoldings, color: COLORS[i % COLORS.length] };
   });
-
-  const grandTotal = portfolioData.reduce((s, p) => s + p.totalValue, 0);
 
   if (portfolios.length === 0) {
     return (

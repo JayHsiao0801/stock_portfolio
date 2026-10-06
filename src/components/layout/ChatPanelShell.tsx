@@ -4,7 +4,7 @@ import { useAppStore } from "@/store/appStore";
 import { AiChatPanel } from "./AiChatPanel";
 
 interface Props {
-  availableProviders: { claude: boolean; gemini: boolean };
+  availableProviders: { claude: boolean; gemini: boolean; groq: boolean };
 }
 
 export function ChatPanelShell({ availableProviders }: Props) {

@@ -7,13 +7,14 @@ export async function pushDbSchema() {
   const dbUrl = env.DATABASE_URL ?? "";
   if (dbUrl.startsWith("file:") && !dbUrl.startsWith("file:/")) {
     const rel = dbUrl.slice(5); // strip "file:"
-    env.DATABASE_URL = `file:${resolve(process.cwd(), rel)}`;
+    env.DATABASE_URL = `file:${resolve(/* turbopackIgnore: true */ process.cwd(), rel)}`;
   }
 
-  const bin = join(process.cwd(), "node_modules", "prisma", "build", "index.js");
+  const projectRoot = /* turbopackIgnore: true */ process.cwd();
+  const bin = join(projectRoot, "node_modules", "prisma", "build", "index.js");
   execSync(`node "${bin}" db push --skip-generate --accept-data-loss`, {
     stdio: "pipe",
-    cwd: process.cwd(),
+    cwd: projectRoot,
     env,
   });
 }

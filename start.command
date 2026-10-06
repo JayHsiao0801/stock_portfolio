@@ -1,6 +1,22 @@
 #!/bin/zsh
 cd "$(dirname "$0")"
 
+node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 20 || (major === 20 && minor >= 19) ? 0 : 1)' 2>/dev/null
+if [ $? -ne 0 ] && [ -x "/opt/homebrew/bin/node" ]; then
+  /opt/homebrew/bin/node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 20 || (major === 20 && minor >= 19) ? 0 : 1)' 2>/dev/null
+  if [ $? -eq 0 ]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+  fi
+fi
+
+node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 20 || (major === 20 && minor >= 19) ? 0 : 1)' 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "需要 Node.js 20.19 或更新版本，目前版本：$(node --version 2>/dev/null || echo 未安裝)"
+  echo "請先安裝最新 Node.js LTS：https://nodejs.org/"
+  read "?按 Enter 結束..."
+  exit 1
+fi
+
 # 若 .env 不存在，自動從範本複製
 if [ ! -f ".env" ]; then
   echo "初始化設定檔 (.env)..."
